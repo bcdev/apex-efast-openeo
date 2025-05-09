@@ -1,0 +1,20 @@
+[project]
+name = "efast-openeo"
+version = "0.1.0"
+description = "OpenEO implementation of the EFAST Sentinel-2/3 fusion algortihm"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openeo>=0.40.0",
+    "pytest>=8.3.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+markers = [
+    "openeo: marks test as requiring a connection to an openeo backend. openeo tests are always slow to execute (deselect with '-m \"not openeo\")",
+    "manual: marks test as requiring manual inspection, the test only produces a result and does not check its correctnes. (deselect with '-m \"not manual\")"
+]
