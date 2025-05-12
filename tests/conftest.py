@@ -19,17 +19,37 @@ def persistent_output_dir_base() -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
 
+
+@pytest.fixture
+def file_extension():
+    return ".nc"
+    #return ".nc"
+
+@pytest.fixture
+def download_style():
+    return "download"
+    #return "execute_batch"
+
+@pytest.fixture
+def execute(download_style):
+    def wrapper(dc):
+        return getattr(dc, download_style)
+
+    return wrapper
+
 @pytest.fixture
 def aoi_bounding_box():
     directions = ["west", "south", "east", "north"]
     bbox_list = [-15.456047, 15.665024, -15.425491, 15.687501]
+    #bbox_list = [-15.456047, 15.665024, -16.0, 16.0]
     bbox = {d: c for (d, c) in zip(directions, bbox_list)}
     return bbox
 
 
 @pytest.fixture
 def time_frame():
-    return ["2022-06-01", "2022-06-30"]
+    #return ["2022-06-03", "2022-06-03"]
+    return ["2022-09-26", "2022-09-26"]
 
 
 @pytest.fixture
@@ -49,6 +69,7 @@ def s3_bands():
         "Syn_Oa06_reflectance",
         "Syn_Oa08_reflectance",
         "Syn_Oa17_reflectance",
+        "CLOUD_flags",
     ]
 
 

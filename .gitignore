@@ -1,3 +1,4 @@
 uv.lock
 test_outputs
 .idea
+tests/bug_reproducers/*.nc

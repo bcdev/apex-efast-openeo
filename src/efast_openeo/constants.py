@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 class S2Scl(IntEnum):
     NO_DATA = 0
@@ -14,3 +14,10 @@ class S2Scl(IntEnum):
     THIN_CIRRUS = 10
     SNOW_ICE = 11
 
+
+class S3SynCloudFlags(IntFlag):
+    CLEAR           = 0b0000
+    CLOUD           = 0b0001
+    CLOUD_AMBIGUOUS = 0b0010
+    CLOUD_MARGIN    = 0b0100
+    SNOW_ICE        = 0b1000
