@@ -24,7 +24,7 @@ def distance_to_cloud_s2(cloud_mask: openeo.DataCube, image_size_pixels=512, max
     warnings.warn("Not yet implemented")
     return euclidean_distance_transform(cloud_mask, image_size_pixels, max_distance_pixels)
 
-def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, max_distance_pixels: int | None=None, pixel_size_native_units: int | None=None, max_distance_native_units: int | None=None):
+def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, max_distance_pixels: int | None=None, pixel_size_native_units: int | float | None=None, max_distance_native_units: int | None=None):
     """
     Compute the distance to cloud on a binary ``cloud_mask``. Distance is computed for all ``False`` pixels to all ``True`` pixels.
     The maximum distance returned by this function can be specified either in pixels, using ``max_distance_pixels``
@@ -46,7 +46,7 @@ def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, ma
         ``cloud_mask``, either in native units (if ``pixel_size_native_units`` is set) or in pixels otherwise.
     """
 
-    assert (max_distance_pixels is None) ^ (pixel_size_native_units is None), (
+    assert (max_distance_pixels is None) ^ (max_distance_native_units is None), (
         "Pixel size must be specified either in pixels or in native units, not both. "
         f"Found {max_distance_pixels=}, {max_distance_native_units=}"
     )
@@ -54,16 +54,13 @@ def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, ma
         assert (pixel_size_native_units is not None) and (pixel_size_native_units > 0), (
             "pixel_size_in_native_units must be larger than 0 and specified if max_distance_in_native_units is set."
         )
-        max_distance_pixels = max_distance_native_units / pixel_size_native_units
+        max_distance_pixels = int(max_distance_native_units / pixel_size_native_units)
 
     dtc_in_pixels = euclidean_distance_transform(cloud_mask, image_size_pixels=image_size_pixels, border_pixels=max_distance_pixels)
     if pixel_size_native_units is not None:
         return dtc_in_pixels * pixel_size_native_units
 
     return dtc_in_pixels
-
-
-
 
 
 def distance_to_cloud_s3(cloud_mask: openeo.DataCube, image_size_pixels=512, max_distance_pixels=255):
@@ -85,7 +82,6 @@ def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, borde
     from a pixel of interest (``False``) situated on one edge of the border to the edge of the image (without border)
     on the opposite side.
     """
-    # TODO dummy implementation
     udf = openeo.UDF.from_file(UDF_DISTANCE_TRANSFORM_PATH)
     dt = band.apply_neighborhood(
         udf,

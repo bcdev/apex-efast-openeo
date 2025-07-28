@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud_s3, cloud_mask_s3
+from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud_s3, distance_to_cloud, cloud_mask_s3
 
 
 # Fixtures
@@ -19,6 +19,14 @@ def test_distance_to_cloud_s3(s3_cube, connection, persistent_output_dir, file_e
     scl = s3_cube.band("CLOUD_flags")
     dtc = distance_to_cloud_s3(cloud_mask_s3(scl), 100, 50)
     execute(dtc)((persistent_output_dir / "dtc").with_suffix(file_extension))
+
+@pytest.mark.openeo
+@pytest.mark.manual
+def test_distance_to_cloud_s3_generic(s3_cube, connection, persistent_output_dir, file_extension, execute):
+    scl = s3_cube.band("CLOUD_flags")
+
+    dtc = distance_to_cloud(cloud_mask_s3(scl), 100, max_distance_pixels=50, pixel_size_native_units=0.0026996)
+    execute(dtc)((persistent_output_dir / "dtc_generic").with_suffix(file_extension))
 
 
 @pytest.mark.openeo
