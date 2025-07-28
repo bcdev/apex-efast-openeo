@@ -16,15 +16,7 @@ def cloud_mask_s3(s3_scl: openeo.DataCube) -> openeo.DataCube:
     return s3_scl > S3SynCloudFlags.CLEAR
 
 
-def distance_to_cloud_s2(cloud_mask: openeo.DataCube, image_size_pixels=512, max_distance_pixels=255):
-    """
-    Computes the distance to the closest cloud
-    """
-    # TODO convert pixels to metres
-    warnings.warn("Not yet implemented")
-    return euclidean_distance_transform(cloud_mask, image_size_pixels, max_distance_pixels)
-
-def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, max_distance_pixels: int | None=None, pixel_size_native_units: int | float | None=None, max_distance_native_units: int | None=None):
+def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, max_distance_pixels: int | None=None, pixel_size_native_units: int | float | None=None, max_distance_native_units: int | float | None=None):
     """
     Compute the distance to cloud on a binary ``cloud_mask``. Distance is computed for all ``False`` pixels to all ``True`` pixels.
     The maximum distance returned by this function can be specified either in pixels, using ``max_distance_pixels``
@@ -57,19 +49,10 @@ def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, ma
         max_distance_pixels = int(max_distance_native_units / pixel_size_native_units)
 
     dtc_in_pixels = euclidean_distance_transform(cloud_mask, image_size_pixels=image_size_pixels, border_pixels=max_distance_pixels)
-    if pixel_size_native_units is not None:
+    if max_distance_native_units is not None:  # pixel_size_native_units must be specified
         return dtc_in_pixels * pixel_size_native_units
 
     return dtc_in_pixels
-
-
-def distance_to_cloud_s3(cloud_mask: openeo.DataCube, image_size_pixels=512, max_distance_pixels=255):
-    """
-    Computes the distance to the closest cloud
-    """
-    # TODO convert pixels to metres
-    warnings.warn("Not yet implemented")
-    return euclidean_distance_transform(cloud_mask, image_size_pixels, max_distance_pixels)
 
 
 def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, border_pixels) -> openeo.DataCube:
