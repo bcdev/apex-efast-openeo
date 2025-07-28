@@ -27,8 +27,8 @@ def file_extension():
 
 @pytest.fixture
 def download_style():
-    return "download"
-    #return "execute_batch"
+    #return "download"
+    return "execute_batch"
 
 @pytest.fixture
 def execute(download_style):
@@ -49,7 +49,7 @@ def aoi_bounding_box():
 @pytest.fixture
 def time_frame():
     #return ["2022-06-03", "2022-06-03"]
-    return ["2022-09-26", "2022-09-26"]
+    return ["2022-09-22", "2022-09-26"]
 
 
 @pytest.fixture
