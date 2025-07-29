@@ -79,3 +79,8 @@ def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, borde
         ],
     )
     return dt
+
+
+def compute_distance_score(distance_to_cloud: openeo.DataCube, max_distance) -> openeo.DataCube:
+    rescaled = (distance_to_cloud - 1) / max_distance
+    return rescaled.clip(0, 1)
