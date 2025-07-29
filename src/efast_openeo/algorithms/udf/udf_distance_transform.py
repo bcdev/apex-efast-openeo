@@ -1,4 +1,3 @@
-from openeo.udf.debug import inspect
 from scipy.ndimage import distance_transform_edt
 import numpy as np
 import xarray as xr

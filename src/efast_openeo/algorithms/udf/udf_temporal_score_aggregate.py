@@ -1,7 +1,6 @@
 import numpy as np
 import xarray as xr
 from openeo.metadata import CubeMetadata
-from openeo.udf import XarrayDataCube, inspect
 from datetime import datetime, timezone
 
 def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
