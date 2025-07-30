@@ -65,10 +65,12 @@ def test_combined_score_variants_produce_equal_results():
 
     combined_score = compute_combined_score(distance_score, temporal_score)
 
-    band = np.ones_like(cloud_mask)
-    bands_cube = xr.DataArray(band, dims=["t", "y", "x"], coords={"t": t}).expand_dims("bands")
+    band = np.ones_like(cloud_mask, dtype=float)
+    band_nan = np.full_like(band, fill_value=np.nan)
 
-    cube = xr.DataArray(np.stack([band, distance_score], axis=1), dims=["t", "bands", "y", "x"], coords={"t": t, "bands": ["band", "distance_score"]})
+    bands_cube = xr.DataArray(np.stack((band, band_nan), axis=1), dims=["t", "bands", "y", "x"], coords={"t": t})
+
+    cube = xr.DataArray(np.stack([band, band_nan, distance_score], axis=1), dims=["t", "bands", "y", "x"], coords={"t": t, "bands": ["band1", "band2", "distance_score"]})
 
     dims = ("t", "bands", "y", "x")
     composite = apply_datacube(cube, {"t_target": t_target.strftime("%Y-%m-%d").to_list()})

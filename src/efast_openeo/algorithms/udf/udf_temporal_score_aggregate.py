@@ -26,18 +26,22 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     distance_score = cube.sel(bands="distance_score")
     data_bands = cube.sel(bands=[b for b in band_names if b != "distance_score"])
 
+    # alternative
     #combined = compute_combined_score(distance_score, temporal_score)
     #composite = xr.dot(combined, data_bands, dim="t")
 
-    # alternative
     composite = _compute_combined_score_no_intermediates(distance_score, temporal_score, data_bands)
 
-    return composite.rename({"t_target": "t"})
+    renamed = composite.rename({"t_target": "t"})
+    dims = ('t' ,'bands','y', 'x')
+    return renamed.transpose(*dims)
 
 
 def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
     t_target = [datetime.fromisoformat(t).replace(tzinfo=timezone.utc) for t in context["t_target"]]
-    return metadata.rename_labels(dimension="t", target=t_target)
+    metadata = metadata.rename_labels(dimension="t", target=t_target)
+    metadata = metadata.filter_bands([band.name for band in metadata.band_dimension.bands if band.name != "distance_score"])
+    return metadata
 
 
 def compute_temporal_score(t: pd.DatetimeIndex, t_target: pd.DatetimeIndex, sigma_doy: float):
@@ -73,6 +77,8 @@ def _compute_combined_score_no_intermediates(distance_score: xr.DataArray, tempo
     return res
 
 def _compute_normalized_composite(distance_score, temporal_score, bands, **kwargs):
+    # TODO proper masking
+    bands = np.where(np.isfinite(bands), bands, EPS)
     numerator = np.einsum('tyx,Tt,tbyx->Tbyx', distance_score, temporal_score, bands, **kwargs)
     # TODO consider deleting EPS
     normalization = np.einsum('tyx,Tt->Tyx', distance_score, temporal_score) + EPS
