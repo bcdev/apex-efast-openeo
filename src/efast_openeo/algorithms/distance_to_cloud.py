@@ -65,7 +65,7 @@ def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, borde
     from a pixel of interest (``False``) situated on one edge of the border to the edge of the image (without border)
     on the opposite side.
     """
-    udf = openeo.UDF.from_file(UDF_DISTANCE_TRANSFORM_PATH)
+    udf = openeo.UDF.from_file(UDF_DISTANCE_TRANSFORM_PATH, runtime="Python", version="3")
     dt = band.apply_neighborhood(
         udf,
         size=[
