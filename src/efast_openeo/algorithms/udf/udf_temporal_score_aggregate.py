@@ -68,7 +68,8 @@ def compute_combined_score(distance_score: xr.DataArray, temporal_score: xr.Data
 
 def _compute_combined_score_no_intermediates(distance_score: xr.DataArray, temporal_score: xr.DataArray, bands: xr.DataArray) -> xr.DataArray:
     res = xr.apply_ufunc(
-        _compute_normalized_composite,
+        #_compute_normalized_composite,
+        _compute_normalized_composite_2,
         distance_score, temporal_score, bands,
         input_core_dims=[['t', 'y', 'x'], ['t_target', 't'], ['t', 'bands', 'y', 'x']],
         output_core_dims=[['t_target', 'bands', 'y', 'x']],
@@ -84,3 +85,21 @@ def _compute_normalized_composite(distance_score, temporal_score, bands, **kwarg
     normalization = np.einsum('tyx,Tt->Tyx', distance_score, temporal_score) + EPS
     res = numerator / np.expand_dims(normalization, 1)
     return res
+
+def _compute_normalized_composite_2(distance_score, temporal_score, bands, **kwargs):
+    score = np.einsum('tyx,Tt->Ttyx', distance_score, temporal_score)
+    # consider pixels as not-observed if the first band has a nan value
+    score_masked = np.where(np.isnan(bands[:, 0, ...]), 0, score)
+
+    # We can remove the +EPS in the normalization as it is only needed where np.sum(score_masked, axis=1) == 0.
+    # These cases are covered by masking with NaNs later.
+
+    normalization = np.sum(score_masked, axis=1)[:, np.newaxis, ...]
+    score_normalized = score_masked / normalization
+
+    finite_bands = np.where(np.isfinite(bands), bands, 0)
+    weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands)
+    # Using score_maked to avoid handling EPS,     T, bands     , y, x (adding a bands dimension)
+    no_data_mask = (np.nansum(score_masked, axis=1) == 0)[:, np.newaxis, ...]
+    weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)
+    return weighted_composite_masked

@@ -80,3 +80,41 @@ def test_combined_score_variants_produce_equal_results():
 
     assert composite.shape == composite2.shape
     assert np.isclose(composite.values, composite2.values).all()
+
+
+def test_composite_masking():
+    t_start = "2022-09-01"
+    t_end = "2022-09-04"
+    t = xr.date_range(t_start, t_end, freq="2D")
+    t_target = xr.date_range(t_start, t_end, freq="1D")
+
+    days, y_len, x_len = len(t), 4, 5
+    pixel_size_m = 10
+    D = 10 * 10
+
+    band = np.ones(shape=(days, y_len, x_len), dtype=float)
+
+    band_nan_idx = (
+        np.array([0, 0, 1]),
+        np.array([3, 1, 1]),
+        np.array([3, 1, 1]),
+    )
+    band[band_nan_idx] = np.nan
+
+    # all pixels on left border are cloudy
+    dtc_score_raw = np.tile(np.arange(x_len), reps=(days, y_len, 1)) * pixel_size_m
+    distance_score = xr.DataArray(np.clip((dtc_score_raw - 1) / D, 0, 1), dims=["t", "y", "x"], coords={"t": t})
+
+    cube = xr.DataArray(np.stack([band, band, distance_score], axis=1), dims=["t", "bands", "y", "x"], coords={"t": t, "bands": ["band1", "band2", "distance_score"]})
+
+    composite = apply_datacube(cube, {"t_target": t_target.strftime("%Y-%m-%d").to_list()})
+    assert composite.sizes["t"] == len(t_target)
+    # All inputs at y=1, x=1 are NaN, so the composite should also be NaN
+    assert np.isnan(composite.isel(y=1, x=1)).all()
+    # Only one of the inputs at y=3, x=3 is NaN, so the output should not be NaN
+    assert np.logical_not(np.isnan(composite.isel(y=3, x=3))).any()
+    # All pixel time series should either be NaN (no input) or sum up to 1 for each time step, because the input is either 1 or NaN
+    # When summing over time, we should receive the number of time steps as a value for each pixel, as each input to the sum is 1
+    nan_mask = np.isnan(composite)
+    close_to_number_of_time_steps = np.isclose(composite.sum(dim="t").isel(bands=0), composite.sizes["t"], atol=0.1)
+    assert (nan_mask | close_to_number_of_time_steps).all()
