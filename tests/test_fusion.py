@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, compute_cloud_mask_s2, compute_distance_score_with_band
+from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, compute_cloud_mask_s2, compute_distance_score
 from efast_openeo.algorithms.temporal_interpolation import interpolate_time_series_to_target_labels
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
 from efast_openeo.algorithms.fusion import fusion
@@ -67,7 +67,7 @@ def test_s3_at_s2_times_mock(s3_at_s2_times_mock, persistent_output_dir, run_ope
 def s2_dtc_cube(s2_scl_cube, image_size_pixels, overlap_size_pixels, dtc_max_distance):
     s2_dtc = distance_to_cloud(compute_cloud_mask_s2(s2_scl_cube), image_size_pixels, max_distance_pixels=overlap_size_pixels,
                                pixel_size_native_units=20)
-    s2_dtc_score_cube = compute_distance_score_with_band(s2_dtc, dtc_max_distance)
+    s2_dtc_score_cube = compute_distance_score(s2_dtc, dtc_max_distance)
     return s2_dtc_score_cube
 
 @pytest.fixture

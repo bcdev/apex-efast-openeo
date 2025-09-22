@@ -8,11 +8,11 @@ from efast_openeo.constants import S2Scl, S3SynCloudFlags
 UDF_DISTANCE_TRANSFORM_PATH = importlib.resources.files("efast_openeo.algorithms.udf").joinpath("udf_distance_transform.py")
 
 # TODO move
-def cloud_mask_s2(s2_scl: openeo.DataCube) -> openeo.DataCube:
+def compute_cloud_mask_s2(s2_scl: openeo.DataCube) -> openeo.DataCube:
     return s2_scl > S2Scl.WATER
 
 # TODO move
-def cloud_mask_s3(s3_scl: openeo.DataCube) -> openeo.DataCube:
+def compute_cloud_mask_s3(s3_scl: openeo.DataCube) -> openeo.DataCube:
     return s3_scl > S3SynCloudFlags.CLEAR
 
 
