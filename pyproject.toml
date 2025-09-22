@@ -5,7 +5,7 @@ description = "OpenEO implementation of the EFAST Sentinel-2/3 fusion algortihm"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "openeo>=0.40.0",
+    "click>=8.2.1",
     "openeo>=0.44.0",
     "pytest>=8.3.5",
     "scipy>=1.15.3",
