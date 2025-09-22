@@ -1,10 +1,9 @@
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
 
-from efast_openeo.algorithms.distance_to_cloud import cloud_mask_s3, distance_to_cloud_s3
+from efast_openeo.algorithms.distance_to_cloud import compute_cloud_mask_s3, distance_to_cloud_s3
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
 
 
@@ -23,6 +22,6 @@ def test_temporal_score_aggregate(time_frame, s3_cube, persistent_output_dir, ex
     target_times = target_times.strftime("%Y-%m-%d").tolist()
     scl = s3_cube.band("CLOUD_flags")
 
-    dtc = distance_to_cloud_s3(cloud_mask_s3(scl), 100, 50)
+    dtc = distance_to_cloud_s3(compute_cloud_mask_s3(scl), 100, 50)
     score = compute_weighted_composite(dtc, target_times)
     execute(score)((persistent_output_dir / "temporal_score_agg").with_suffix(file_extension))
