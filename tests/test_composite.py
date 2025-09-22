@@ -4,22 +4,11 @@ import pytest
 import xarray as xr
 
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
-from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, cloud_mask_s3, compute_distance_score
+from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, compute_cloud_mask_s3, compute_distance_score
 
 CLOUD_BAND_S3 = "CLOUD_flags"
 METRES_PER_PIXEL_S2 = 20
 DEGREES_PER_PIXEL_S3 = 0.0027  # TODO check accuracy
-
-
-# TODO move to conftest
-@pytest.fixture
-def image_size_pixels() -> int:
-    return 100
-
-
-@pytest.fixture
-def overlap_size_pixels() -> int:
-    return 50
 
 
 @pytest.fixture
@@ -36,7 +25,7 @@ def test_compute_composite(s3_bands, s3_cube, time_frame, connection, persistent
     t_start, t_end = time_frame
     t_target = xr.date_range(t_start, t_end, freq="2D").strftime("%Y-%m-%d").to_list()
     scl = s3_cube.band(CLOUD_BAND_S3)
-    dtc = distance_to_cloud(cloud_mask_s3(scl), image_size_pixels, max_distance_pixels=overlap_size_pixels,
+    dtc = distance_to_cloud(compute_cloud_mask_s3(scl), image_size_pixels, max_distance_pixels=overlap_size_pixels,
                             pixel_size_native_units=DEGREES_PER_PIXEL_S3)
     distance_score = compute_distance_score(dtc, D)
     data_band_names = [band for band in s3_bands if band != CLOUD_BAND_S3]
