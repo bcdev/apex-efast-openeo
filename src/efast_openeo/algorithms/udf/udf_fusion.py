@@ -15,8 +15,7 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
 
     fused = fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands)
 
-    dims = ('t' ,'bands','y', 'x')
-    return fused.transpose(*dims)
+    return fused
 
 
 def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
