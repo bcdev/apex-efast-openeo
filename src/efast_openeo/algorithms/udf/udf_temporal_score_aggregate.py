@@ -93,13 +93,14 @@ def _compute_normalized_composite_2(distance_score, temporal_score, bands, **kwa
 
     # We can remove the +EPS in the normalization as it is only needed where np.sum(score_masked, axis=1) == 0.
     # These cases are covered by masking with NaNs later.
-
-    normalization = np.sum(score_masked, axis=1)[:, np.newaxis, ...]
+    normalization_flat = np.sum(score_masked, axis=1)
+    normalization = normalization_flat[:, np.newaxis, ...]
     score_normalized = score_masked / normalization
 
     finite_bands = np.where(np.isfinite(bands), bands, 0)
-    weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands)
+    weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands) # original
+    #weighted_composite = np.einsum('tTyx,Tbyx->Tbyx', score_normalized, finite_bands)
     # Using score_maked to avoid handling EPS,     T, bands     , y, x (adding a bands dimension)
-    no_data_mask = (np.nansum(score_masked, axis=1) == 0)[:, np.newaxis, ...]
+    no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...]
     weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)
     return weighted_composite_masked
