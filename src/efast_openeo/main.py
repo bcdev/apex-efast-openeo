@@ -7,6 +7,7 @@ import xarray as xr
 from efast_openeo.algorithms.fusion import fusion
 from efast_openeo.algorithms.temporal_interpolation import interpolate_time_series_to_target_labels
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
+from efast_openeo.smoothing import smoothing_kernel
 from efast_openeo.util.log import logger
 from efast_openeo import constants
 from efast_openeo.data_loading import load_and_scale
@@ -244,6 +245,9 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
     s3_composite_data_bands = s3_composite.filter_bands(s3_data_bands)
     s3_composite_data_bands = save_intermediate(s3_composite_data_bands, "s3_composite_data_bands", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
 
+    s3_composite_data_bands_smoothed = s3_composite_data_bands.apply_kernel(kernel=smoothing_kernel())
+    s3_composite_data_bands_smoothed = save_intermediate(s3_composite_data_bands_smoothed, "s3_composite_data_bands_smoothed", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
+
     # s2 pre processing
     s2_cloud_mask = compute_cloud_mask_s2(s2_flags)
     s2_cloud_mask = save_intermediate(s2_cloud_mask, "s2_cloud_mask", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
@@ -262,12 +266,12 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
     s2_bands_masked = save_intermediate(s2_bands_masked, "s2_bands_masked", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
 
     # s3 temporal resampling
-    s3_composite_target_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands, t_target)
+    s3_composite_target_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands_smoothed, t_target)
     s3_composite_target_interp = save_intermediate(s3_composite_target_interp, "s3_composite_target_interp", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
 
     s3_composite_target_interp_band_names = [b + "_interpolated" for b in s3_data_bands]
     s3_composite_target_interp = s3_composite_target_interp.rename_labels("bands", target=s3_composite_target_interp_band_names, source=s3_data_bands)
-    s3_composite_s2_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands, s2_bands.dimension_labels("t"))
+    s3_composite_s2_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands_smoothed, s2_bands.dimension_labels("t"))
 
     # s2/3 aggregate
     s2_bands_dtc_merge = s2_bands_masked.merge_cubes(s2_distance_score)
