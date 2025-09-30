@@ -35,7 +35,7 @@ def fusion(cube, high_resolution_mosaic_band_names: List[str], low_resolution_mo
     """
 
 
-    udf = openeo.UDF.from_file(UDF_FUSION_SCORE, context={"from_parameter": "context"}, runtime="Python", version="3")
+    udf = openeo.UDF.from_file(UDF_FUSION_SCORE, context={"from_parameter": "context"}, runtime="Python")#, version="3")
     context = {
         "lr_mosaic_bands": low_resolution_mosaic_band_names,
         "hr_mosaic_bands": high_resolution_mosaic_band_names,
