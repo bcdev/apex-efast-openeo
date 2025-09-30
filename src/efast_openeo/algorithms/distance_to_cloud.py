@@ -1,7 +1,6 @@
 import importlib
 
 import openeo
-import warnings
 
 from efast_openeo.constants import S2Scl, S3SynCloudFlags
 

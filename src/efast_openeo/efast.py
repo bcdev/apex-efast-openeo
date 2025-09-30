@@ -7,7 +7,6 @@ from efast_openeo.smoothing import smoothing_kernel
 from efast_openeo.util.log import logger
 from efast_openeo import constants
 from efast_openeo.data_loading import load_and_scale
-
 from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, compute_cloud_mask_s3, compute_cloud_mask_s2, \
     compute_distance_score
 
