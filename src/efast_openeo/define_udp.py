@@ -173,16 +173,6 @@ if __name__ == '__main__':
 
     )
 
-    out_path = Path(__file__).parent.parent / "test_outputs" / "full_chain_udp"
+    out_path = Path(__file__).parent.parent.parent / "test_outputs" / "full_chain_udp"
     #cube.download("fused_udp.nc")
-    cube.execute_batch(out_path / "fused_udp.nc")
-    # params = [
-        # temporal_extent,
-        # spatial_extent,
-        # target_time_series,
-        # max_distance_to_cloud_m,
-        # temporal_score_stddev,
-        # s3_data_bands,
-        # s2_data_bands,
-        # cloud_tolerance_percentage,
-    # ]
+    cube.execute_batch(outputfile=(out_path / "fused_udp.nc"))
