@@ -9,6 +9,7 @@ from efast_openeo.algorithms.temporal_interpolation import interpolate_time_seri
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
 from efast_openeo.util.log import logger
 from efast_openeo import constants
+from efast_openeo.data_loading import load_and_scale
 
 from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, compute_cloud_mask_s3, compute_cloud_mask_s2, compute_distance_score
 
@@ -200,8 +201,9 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
             temporal_extent=[t_start, t_end_excl],
             bands=[constants.S3_FLAG_BAND]
         ).band(constants.S3_FLAG_BAND)
-    s3_bands = connection.load_collection(
-        constants.S3_COLLECTION,
+    s3_bands = load_and_scale(
+        connection=connection,
+        collection_id=constants.S3_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=[t_start, t_end_excl],
         bands=s3_data_bands,
@@ -212,8 +214,9 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
         temporal_extent=[t_start, t_end_excl],
         bands=[constants.S2_FLAG_BAND],
     ).band(constants.S2_FLAG_BAND)
-    s2_bands = connection.load_collection(
-        constants.S2_COLLECTION,
+    s2_bands = load_and_scale(
+        connection=connection,
+        collection_id=constants.S2_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=[t_start, t_end_excl],
         bands=s2_data_bands,
@@ -236,6 +239,7 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
     s3_distance_score = save_intermediate(s3_distance_score, "s3_distance_score", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
 
     s3_bands_and_distance_score = s3_bands.merge_cubes(s3_distance_score)
+    s3_bands_and_distance_score = save_intermediate(s3_bands_and_distance_score, "s3_bands_and_distance_score", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
     s3_composite = compute_weighted_composite(s3_bands_and_distance_score, t_s3_composites, sigma_doy=temporal_score_stddev)
     s3_composite_data_bands = s3_composite.filter_bands(s3_data_bands)
     s3_composite_data_bands = save_intermediate(s3_composite_data_bands, "s3_composite_data_bands", out_dir=output_dir, file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates)
