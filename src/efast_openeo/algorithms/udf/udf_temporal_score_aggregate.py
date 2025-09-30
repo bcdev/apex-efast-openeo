@@ -101,6 +101,6 @@ def _compute_normalized_composite_2(distance_score, temporal_score, bands, **kwa
     weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands) # original
     #weighted_composite = np.einsum('tTyx,Tbyx->Tbyx', score_normalized, finite_bands)
     # Using score_maked to avoid handling EPS,     T, bands     , y, x (adding a bands dimension)
-    no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...]
+    no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...] | (weighted_composite <= 0)
     weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)
     return weighted_composite_masked

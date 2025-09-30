@@ -1,4 +1,5 @@
 import xarray as xr
+import numpy as np
 from openeo.metadata import CubeMetadata
 
 
@@ -25,8 +26,14 @@ def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
 
 
 def fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):
+
     fused_list = [
-        cube.sel(bands=[hr_m, lr_p]).sum(dim="bands") - cube.sel(bands=lr_m).squeeze()
+        xr.where(
+            (cube.sel(bands=lr_m) == 0) | np.isnan(cube.sel(bands=lr_m)) |
+            (cube.sel(bands=lr_p) == 0) | np.isnan(cube.sel(bands=lr_p))
+        ,
+        cube.sel(bands=hr_m).squeeze(),
+        cube.sel(bands=[hr_m, lr_p]).sum(dim="bands") - cube.sel(bands=lr_m).squeeze())
         for (hr_m, lr_m, lr_p) in zip(hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands)
     ]
 
