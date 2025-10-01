@@ -6,7 +6,7 @@ class S2Scl(IntEnum):
     TOPOGRAPHIC_SHADOW = 2
     CLOUD_SHADOW = 3
     VEGETATION = 4
-    NOT_VEGTATED = 5
+    NOT_VEGETATED = 5
     WATER = 6
     UNCLASSIFIED = 7
     CLOUD_MEDIUM = 8
