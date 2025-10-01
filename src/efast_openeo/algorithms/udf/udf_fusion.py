@@ -4,6 +4,11 @@ from openeo.metadata import CubeMetadata
 
 
 def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
+    """
+    Computes the main fusion procedure, equation (3) in [1].
+
+    [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. “Fast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.” Remote Sensing 16, no. 11 (2024): 11. https://doi.org/10.3390/rs16111833.
+    """
     assert "bands" in cube.dims, f"cube must have a 'bands' dimension, found '{cube.dims}'"
     assert "hr_mosaic_bands" in context, f"The high resolution mosaic bands 'hr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
     assert "lr_mosaic_bands" in context, f"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
@@ -28,6 +33,9 @@ def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
 def fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):
 
     fused_list = [
+        # Pixels where there is no data in either lr_m or lr_p are skipped, to avoid
+        # only adding or only subtracting from the S2 composite, which would result in unusually high or low
+        # (e.g. negative values).
         xr.where(
             (cube.sel(bands=lr_m) == 0) | np.isnan(cube.sel(bands=lr_m)) |
             (cube.sel(bands=lr_p) == 0) | np.isnan(cube.sel(bands=lr_p))

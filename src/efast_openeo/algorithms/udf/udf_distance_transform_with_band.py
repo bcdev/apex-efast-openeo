@@ -6,7 +6,7 @@ from openeo.udf import XarrayDataCube
 def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     """
     Expects the cloud mask as input (in contrast to ``distance_transform_edt``).
-    This is necessary, because ``apply_neighbourhood`` pads the input with zeros and not ones.
+    This is necessary, because ``apply_neighborhood`` pads the input with zeros and not ones.
     """
     array = cube.get_array()
     # This special case appears to create some issues, so we skip it

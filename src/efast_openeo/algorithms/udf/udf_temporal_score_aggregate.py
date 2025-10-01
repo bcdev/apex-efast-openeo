@@ -11,6 +11,11 @@ EPS = 1e-5
 
 def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     """
+    Computes a composite time series. The input time series is converted to the time series passed
+    as ``"t_target"`` in ``context``, by computing a weighted sum of input images for each time step in
+    ``t_target``. The inputs are weighted by their temporal distance to the target time step and by the distance to
+    cloud score (the ``"distance_score"`` band of the inputs).
+
     Expects ``cube`` to be an array of dimensions (t, bands, y, x)
     """
 
@@ -20,15 +25,10 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     assert "t_target" in context, f"The target time dimension 't_target' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
 
     t_target = pd.DatetimeIndex([datetime.fromisoformat(t) for t in context["t_target"]])
-    # TODO pass default properly
     sigma_doy = context.get("sigma_doy", 5)
     temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)
     distance_score = cube.sel(bands="distance_score")
     data_bands = cube.sel(bands=[b for b in band_names if b != "distance_score"])
-
-    # alternative
-    #combined = compute_combined_score(distance_score, temporal_score)
-    #composite = xr.dot(combined, data_bands, dim="t")
 
     composite = _compute_combined_score_no_intermediates(distance_score, temporal_score, data_bands)
 
@@ -44,7 +44,15 @@ def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
     return metadata
 
 
-def compute_temporal_score(t: pd.DatetimeIndex, t_target: pd.DatetimeIndex, sigma_doy: float):
+def compute_temporal_score(t: pd.DatetimeIndex, t_target: pd.DatetimeIndex, sigma_doy: float) -> xr.DataArray:
+    """
+    Compute the temporal weight for each input and output time step.
+    Generates a two-dimensional score, mapping input time steps to output time steps (``len(t) * len(t_target)`` entries).
+
+    :param t: time stamps of the input time series
+    :param t_target: target time stamps for which the composites are to be computed
+    :param sigma_doy: standard deviation of the gaussian window used for temporal weighting
+    """
     t_values = t.values.astype("datetime64[D]")
     t_target_values = t_target.values.astype("datetime64[D]")
     difference_matrix = t_values[:, np.newaxis] - t_target_values[np.newaxis, :]
@@ -68,8 +76,7 @@ def compute_combined_score(distance_score: xr.DataArray, temporal_score: xr.Data
 
 def _compute_combined_score_no_intermediates(distance_score: xr.DataArray, temporal_score: xr.DataArray, bands: xr.DataArray) -> xr.DataArray:
     res = xr.apply_ufunc(
-        #_compute_normalized_composite,
-        _compute_normalized_composite_2,
+        _compute_normalized_composite,
         distance_score, temporal_score, bands,
         input_core_dims=[['t', 'y', 'x'], ['t_target', 't'], ['t', 'bands', 'y', 'x']],
         output_core_dims=[['t_target', 'bands', 'y', 'x']],
@@ -77,30 +84,23 @@ def _compute_combined_score_no_intermediates(distance_score: xr.DataArray, tempo
     )
     return res
 
-def _compute_normalized_composite(distance_score, temporal_score, bands, **kwargs):
-    # TODO proper masking
-    bands = np.where(np.isfinite(bands), bands, EPS)
-    numerator = np.einsum('tyx,Tt,tbyx->Tbyx', distance_score, temporal_score, bands, **kwargs)
-    # TODO consider deleting EPS
-    normalization = np.einsum('tyx,Tt->Tyx', distance_score, temporal_score) + EPS
-    res = numerator / np.expand_dims(normalization, 1)
-    return res
 
-def _compute_normalized_composite_2(distance_score, temporal_score, bands, **kwargs):
+def _compute_normalized_composite(distance_score, temporal_score, bands, **kwargs):
+    """
+    Compute the combined distance-to-cloud and temporal score and the weighted sum applying the score by pixel and
+    input/target time stamp to generate the composites
+    """
     score = np.einsum('tyx,Tt->Ttyx', distance_score, temporal_score)
     # consider pixels as not-observed if the first band has a nan value
     score_masked = np.where(np.isnan(bands[:, 0, ...]), 0, score)
 
-    # We can remove the +EPS in the normalization as it is only needed where np.sum(score_masked, axis=1) == 0.
-    # These cases are covered by masking with NaNs later.
     normalization_flat = np.sum(score_masked, axis=1)
     normalization = normalization_flat[:, np.newaxis, ...]
     score_normalized = score_masked / normalization
 
     finite_bands = np.where(np.isfinite(bands), bands, 0)
     weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands) # original
-    #weighted_composite = np.einsum('tTyx,Tbyx->Tbyx', score_normalized, finite_bands)
-    # Using score_maked to avoid handling EPS,     T, bands     , y, x (adding a bands dimension)
+
     no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...] | (weighted_composite <= 0)
     weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)
     return weighted_composite_masked

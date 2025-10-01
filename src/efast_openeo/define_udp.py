@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple, List
 
 import openeo
 from openeo.api.process import Parameter
@@ -6,7 +7,15 @@ from openeo.api.process import Parameter
 from efast_openeo.efast import efast_openeo
 
 
-def create_efast_udp(connection):
+def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
+    """
+    Creates the parameters and parameterized process graph for EFAST.
+
+    :param connection: authenticated connection to an OpenEO backend
+    :returns: (parameters, process graph) the parameters to be defined when calling the EFAST UDP and the
+        parameterized process graph
+
+    """
     temporal_extent = Parameter(
         name="temporal_extent",
         description=(
@@ -36,6 +45,9 @@ def create_efast_udp(connection):
 
     )
 
+    # max_distance_to_cloud_m can't be a parameter, because it determines the overlap size in the ``apply_neighborhood``
+    # call used to compute the distance to cloud scores
+
     #max_distance_to_cloud_m = Parameter.number(
     #    name="max_distance_to_cloud_m",
     #    description=(
@@ -54,6 +66,10 @@ def create_efast_udp(connection):
         default=10,
     )
 
+    # FIXME This parameter can't be used (yet) because the call to ``rename_bands`` fails which is used
+    # to distinguish the bands from interpolated and composite S3 cubes that are combined in the final fusion step.
+    # There may be solutions or workarounds. The main issue is to have separate names for both types of bands
+    # for any number of input bands.
     s3_data_bands = Parameter.array(
         name="s3_data_bands",
         description=(
@@ -89,6 +105,8 @@ def create_efast_udp(connection):
         },
     )
 
+    # FIXME this isn't a parameter because arithmetic operations with parameters need to be handled specially.
+    # May stay hardcoded, or a solution to correctly handle arithmetic / comparisons with a parameter must be found.
     cloud_tolerance_percentage = Parameter.number(
         name="cloud_tolerance_percentage",
         description=(
@@ -127,7 +145,6 @@ def create_efast_udp(connection):
     file_format = None
     synchronous = None
 
-
     process_graph = efast_openeo(connection=connection, max_distance_to_cloud_m=max_distance_to_cloud_m, temporal_score_stddev=temporal_score_stddev, t_s3_composites=t_s3_composites, t_target=target_time_series, temporal_extent=temporal_extent,
                  bbox=spatial_extent, s3_data_bands=s3_data_bands, s2_data_bands=s2_data_bands, fused_band_names=fused_band_names, output_dir=output_dir, save_intermediates=save_intermediates, synchronous=synchronous,
                  skip_intermediates=skip_intermediates, file_format=file_format, cloud_tolerance_percentage=cloud_tolerance_percentage)
@@ -136,7 +153,7 @@ def create_efast_udp(connection):
 
 
 if __name__ == '__main__':
-    # TODO add parameters like output dir and the UDP parameters
+    # TODO make a function that takes command line arguments
     connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
     params, process_graph = create_efast_udp(connection)
     process_id = "efast"
@@ -151,8 +168,10 @@ if __name__ == '__main__':
         spatial_extent={
             "west": -15.456047,
             "south": 15.665024,
-            "east": -15.425491,
-            "north": 15.687501,
+            #"east": -15.425491,
+            #"north": 15.687501,
+            "east": -15.325491,
+            "north": 15.787501,
         },
         temporal_extent=["2022-09-07", "2022-09-27"],
         target_time_series=[
