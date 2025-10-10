@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 from pathlib import Path
 
 import click
@@ -15,7 +16,16 @@ def cli():
 def export(json_path: Path):
     connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
     params, process_graph = create_efast_udp(connection)
-    json_path.write_text(process_graph.to_json())
+    pg_with_metadata = openeo.rest.udp.build_process_dict(
+        process_graph,
+        process_id="efast",
+        summary="efast",
+        description="efast",
+        parameters=params
+    )
+
+    with open(json_path, "w") as fh:
+        fh.write(json.dumps(pg_with_metadata, indent=4))
 
 
 @cli.command()
