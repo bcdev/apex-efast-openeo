@@ -1,0 +1,913 @@
+{
+  "process_graph": {
+    "loadcollection1": {
+      "process_id": "load_collection",
+      "arguments": {
+        "bands": {
+          "from_parameter": "s2_data_bands"
+        },
+        "featureflags": {
+          "reprojection_type": "binning",
+          "supersampling": 2
+        },
+        "id": "SENTINEL2_L2A",
+        "spatial_extent": {
+          "from_parameter": "spatial_extent"
+        },
+        "temporal_extent": {
+          "from_parameter": "temporal_extent"
+        }
+      }
+    },
+    "apply1": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "loadcollection1"
+        },
+        "process": {
+          "process_graph": {
+            "add1": {
+              "process_id": "add",
+              "arguments": {
+                "x": {
+                  "from_parameter": "x"
+                },
+                "y": 0
+              }
+            },
+            "multiply1": {
+              "process_id": "multiply",
+              "arguments": {
+                "x": {
+                  "from_node": "add1"
+                },
+                "y": 0.0001
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "loadcollection2": {
+      "process_id": "load_collection",
+      "arguments": {
+        "bands": [
+          "SCL"
+        ],
+        "id": "SENTINEL2_L2A",
+        "spatial_extent": {
+          "from_parameter": "spatial_extent"
+        },
+        "temporal_extent": {
+          "from_parameter": "temporal_extent"
+        }
+      }
+    },
+    "reducedimension1": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "loadcollection2"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement1": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "index": 0
+              }
+            },
+            "eq1": {
+              "process_id": "eq",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement1"
+                },
+                "y": 0
+              }
+            },
+            "eq2": {
+              "process_id": "eq",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement1"
+                },
+                "y": 3
+              }
+            },
+            "or1": {
+              "process_id": "or",
+              "arguments": {
+                "x": {
+                  "from_node": "eq1"
+                },
+                "y": {
+                  "from_node": "eq2"
+                }
+              }
+            },
+            "gt1": {
+              "process_id": "gt",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement1"
+                },
+                "y": 7
+              }
+            },
+            "or2": {
+              "process_id": "or",
+              "arguments": {
+                "x": {
+                  "from_node": "or1"
+                },
+                "y": {
+                  "from_node": "gt1"
+                }
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "mask1": {
+      "process_id": "mask",
+      "arguments": {
+        "data": {
+          "from_node": "apply1"
+        },
+        "mask": {
+          "from_node": "reducedimension1"
+        }
+      }
+    },
+    "reducedimension2": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "loadcollection2"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement2": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "index": 0
+              }
+            },
+            "eq3": {
+              "process_id": "eq",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement2"
+                },
+                "y": 0
+              }
+            },
+            "eq4": {
+              "process_id": "eq",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement2"
+                },
+                "y": 3
+              }
+            },
+            "or3": {
+              "process_id": "or",
+              "arguments": {
+                "x": {
+                  "from_node": "eq3"
+                },
+                "y": {
+                  "from_node": "eq4"
+                }
+              }
+            },
+            "gt2": {
+              "process_id": "gt",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement2"
+                },
+                "y": 7
+              }
+            },
+            "or4": {
+              "process_id": "or",
+              "arguments": {
+                "x": {
+                  "from_node": "or3"
+                },
+                "y": {
+                  "from_node": "gt2"
+                }
+              }
+            },
+            "multiply2": {
+              "process_id": "multiply",
+              "arguments": {
+                "x": {
+                  "from_node": "or4"
+                },
+                "y": 1.0
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "loadcollection3": {
+      "process_id": "load_collection",
+      "arguments": {
+        "bands": [
+          "Syn_Oa04_reflectance",
+          "Syn_Oa06_reflectance",
+          "Syn_Oa08_reflectance",
+          "Syn_Oa17_reflectance"
+        ],
+        "featureflags": {
+          "reprojection_type": "binning",
+          "supersampling": 2
+        },
+        "id": "SENTINEL3_SYN_L2_SYN",
+        "spatial_extent": {
+          "from_parameter": "spatial_extent"
+        },
+        "temporal_extent": {
+          "from_parameter": "temporal_extent"
+        }
+      }
+    },
+    "apply2": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "loadcollection3"
+        },
+        "process": {
+          "process_graph": {
+            "add2": {
+              "process_id": "add",
+              "arguments": {
+                "x": {
+                  "from_parameter": "x"
+                },
+                "y": 0
+              }
+            },
+            "multiply3": {
+              "process_id": "multiply",
+              "arguments": {
+                "x": {
+                  "from_node": "add2"
+                },
+                "y": 0.0001
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "resamplecubespatial1": {
+      "process_id": "resample_cube_spatial",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension2"
+        },
+        "method": "average",
+        "target": {
+          "from_node": "apply2"
+        }
+      }
+    },
+    "apply3": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "resamplecubespatial1"
+        },
+        "process": {
+          "process_graph": {
+            "gte1": {
+              "process_id": "gte",
+              "arguments": {
+                "x": {
+                  "from_parameter": "x"
+                },
+                "y": 0.05
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "applyneighborhood1": {
+      "process_id": "apply_neighborhood",
+      "arguments": {
+        "data": {
+          "from_node": "apply3"
+        },
+        "overlap": [
+          {
+            "dimension": "x",
+            "value": 18,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 18,
+            "unit": "px"
+          }
+        ],
+        "process": {
+          "process_graph": {
+            "runudf1": {
+              "process_id": "run_udf",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "from scipy.ndimage import distance_transform_edt\nimport numpy as np\nimport xarray as xr\nfrom openeo.udf import XarrayDataCube\n\ndef apply_datacube(cube: XarrayDataCube, context: dict) -> XarrayDataCube:\n    \"\"\"\n    Expects the cloud mask as input (in contrast to ``distance_transform_edt``).\n    This is necessary, because ``apply_neighborhood`` pads the input with zeros and not ones.\n    \"\"\"\n    array = cube.get_array()\n    # This special case appears to create some issues, so we skip it\n    if not array.any():\n        return XarrayDataCube(xr.DataArray(np.full_like(array, np.nan), dims=[\"t\", \"y\", \"x\"]))\n    distance = distance_transform_edt(np.logical_not(array))\n    return XarrayDataCube(xr.DataArray(distance, dims=[\"t\", \"y\", \"x\"]))\n"
+              },
+              "result": true
+            }
+          }
+        },
+        "size": [
+          {
+            "dimension": "t",
+            "value": "P1D"
+          },
+          {
+            "dimension": "x",
+            "value": 36,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 36,
+            "unit": "px"
+          }
+        ]
+      }
+    },
+    "apply4": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "applyneighborhood1"
+        },
+        "process": {
+          "process_graph": {
+            "subtract1": {
+              "process_id": "subtract",
+              "arguments": {
+                "x": {
+                  "from_parameter": "x"
+                },
+                "y": 1
+              }
+            },
+            "divide1": {
+              "process_id": "divide",
+              "arguments": {
+                "x": {
+                  "from_node": "subtract1"
+                },
+                "y": 16.666666666666668
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "apply5": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "apply4"
+        },
+        "process": {
+          "process_graph": {
+            "clip1": {
+              "process_id": "clip",
+              "arguments": {
+                "max": 1,
+                "min": 0,
+                "x": {
+                  "from_parameter": "x"
+                }
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "adddimension1": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "apply5"
+        },
+        "label": "distance_score",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "mergecubes1": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "mask1"
+        },
+        "cube2": {
+          "from_node": "adddimension1"
+        }
+      }
+    },
+    "dimensionlabels1": {
+      "process_id": "dimension_labels",
+      "arguments": {
+        "data": {
+          "from_node": "apply1"
+        },
+        "dimension": "t"
+      }
+    },
+    "loadcollection4": {
+      "process_id": "load_collection",
+      "arguments": {
+        "bands": [
+          "CLOUD_flags"
+        ],
+        "id": "SENTINEL3_SYN_L2_SYN",
+        "spatial_extent": {
+          "from_parameter": "spatial_extent"
+        },
+        "temporal_extent": {
+          "from_parameter": "temporal_extent"
+        }
+      }
+    },
+    "reducedimension3": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "loadcollection4"
+        },
+        "dimension": "bands",
+        "reducer": {
+          "process_graph": {
+            "arrayelement3": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "index": 0
+              }
+            },
+            "gt3": {
+              "process_id": "gt",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement3"
+                },
+                "y": 0
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "applyneighborhood2": {
+      "process_id": "apply_neighborhood",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension3"
+        },
+        "overlap": [
+          {
+            "dimension": "x",
+            "value": 18,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 18,
+            "unit": "px"
+          }
+        ],
+        "process": {
+          "process_graph": {
+            "runudf2": {
+              "process_id": "run_udf",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "from scipy.ndimage import distance_transform_edt\nimport numpy as np\nimport xarray as xr\nfrom openeo.udf import XarrayDataCube\n\ndef apply_datacube(cube: XarrayDataCube, context: dict) -> XarrayDataCube:\n    \"\"\"\n    Expects the cloud mask as input (in contrast to ``distance_transform_edt``).\n    This is necessary, because ``apply_neighborhood`` pads the input with zeros and not ones.\n    \"\"\"\n    array = cube.get_array()\n    # This special case appears to create some issues, so we skip it\n    if not array.any():\n        return XarrayDataCube(xr.DataArray(np.full_like(array, np.nan), dims=[\"t\", \"y\", \"x\"]))\n    distance = distance_transform_edt(np.logical_not(array))\n    return XarrayDataCube(xr.DataArray(distance, dims=[\"t\", \"y\", \"x\"]))\n"
+              },
+              "result": true
+            }
+          }
+        },
+        "size": [
+          {
+            "dimension": "t",
+            "value": "P1D"
+          },
+          {
+            "dimension": "x",
+            "value": 36,
+            "unit": "px"
+          },
+          {
+            "dimension": "y",
+            "value": 36,
+            "unit": "px"
+          }
+        ]
+      }
+    },
+    "apply6": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "applyneighborhood2"
+        },
+        "process": {
+          "process_graph": {
+            "subtract2": {
+              "process_id": "subtract",
+              "arguments": {
+                "x": {
+                  "from_parameter": "x"
+                },
+                "y": 1
+              }
+            },
+            "divide2": {
+              "process_id": "divide",
+              "arguments": {
+                "x": {
+                  "from_node": "subtract2"
+                },
+                "y": 16.666666666666668
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "apply7": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "apply6"
+        },
+        "process": {
+          "process_graph": {
+            "clip2": {
+              "process_id": "clip",
+              "arguments": {
+                "max": 1,
+                "min": 0,
+                "x": {
+                  "from_parameter": "x"
+                }
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "adddimension2": {
+      "process_id": "add_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "apply7"
+        },
+        "label": "distance_score",
+        "name": "bands",
+        "type": "bands"
+      }
+    },
+    "mergecubes2": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "apply2"
+        },
+        "cube2": {
+          "from_node": "adddimension2"
+        }
+      }
+    },
+    "applydimension1": {
+      "process_id": "apply_dimension",
+      "arguments": {
+        "context": {
+          "t_target": {
+            "from_parameter": "target_time_series"
+          },
+          "sigma_doy": {
+            "from_parameter": "temporal_score_stddev"
+          }
+        },
+        "data": {
+          "from_node": "mergecubes2"
+        },
+        "dimension": "t",
+        "process": {
+          "process_graph": {
+            "runudf3": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "from_parameter": "context"
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "import numpy as np\nimport pandas as pd\n\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\nfrom datetime import datetime, timezone\n\n\nEPS = 1e-5\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes a composite time series. The input time series is converted to the time series passed\n    as ``\"t_target\"`` in ``context``, by computing a weighted sum of input images for each time step in\n    ``t_target``. The inputs are weighted by their temporal distance to the target time step and by the distance to\n    cloud score (the ``\"distance_score\"`` band of the inputs).\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n\n    band_names = cube.get_index(\"bands\")\n    assert \"bands\" in cube.dims, f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    assert \"distance_score\" in band_names, f\"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'\"\n    assert \"t_target\" in context, f\"The target time dimension 't_target' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n\n    t_target = pd.DatetimeIndex([datetime.fromisoformat(t) for t in context[\"t_target\"]])\n    sigma_doy = context.get(\"sigma_doy\", 5)\n    temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)\n    distance_score = cube.sel(bands=\"distance_score\")\n    data_bands = cube.sel(bands=[b for b in band_names if b != \"distance_score\"])\n\n    composite = _compute_combined_score_no_intermediates(distance_score, temporal_score, data_bands)\n\n    renamed = composite.rename({\"t_target\": \"t\"})\n    dims = ('t' ,'bands','y', 'x')\n    return renamed.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    t_target = [datetime.fromisoformat(t).replace(tzinfo=timezone.utc) for t in context[\"t_target\"]]\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    metadata = metadata.filter_bands([band.name for band in metadata.band_dimension.bands if band.name != \"distance_score\"])\n    return metadata\n\n\ndef compute_temporal_score(t: pd.DatetimeIndex, t_target: pd.DatetimeIndex, sigma_doy: float) -> xr.DataArray:\n    \"\"\"\n    Compute the temporal weight for each input and output time step.\n    Generates a two-dimensional score, mapping input time steps to output time steps (``len(t) * len(t_target)`` entries).\n\n    :param t: time stamps of the input time series\n    :param t_target: target time stamps for which the composites are to be computed\n    :param sigma_doy: standard deviation of the gaussian window used for temporal weighting\n    \"\"\"\n    t_values = t.values.astype(\"datetime64[D]\")\n    t_target_values = t_target.values.astype(\"datetime64[D]\")\n    difference_matrix = t_values[:, np.newaxis] - t_target_values[np.newaxis, :]\n\n    arr = np.exp(-0.5 * np.square(difference_matrix.astype(int))  / np.square(sigma_doy))\n    return xr.DataArray(\n        arr,\n        coords={\"t\": t, \"t_target\": t_target},\n        dims=[\"t\", \"t_target\"],\n    )\n\n\ndef compute_combined_score(distance_score: xr.DataArray, temporal_score: xr.DataArray) -> xr.DataArray:\n    # equivalent to (distance_score * temporal_score).sum(dim=\"t\")\n    #return xr.dot(distance_score, temporal_score, dim=\"t\")\n\n    combined = distance_score * temporal_score\n    # TODO remove EPS and use mask instead\n    return combined / (combined.sum(dim=\"t\") + EPS)\n\n\ndef _compute_combined_score_no_intermediates(distance_score: xr.DataArray, temporal_score: xr.DataArray, bands: xr.DataArray) -> xr.DataArray:\n    res = xr.apply_ufunc(\n        _compute_normalized_composite,\n        distance_score, temporal_score, bands,\n        input_core_dims=[['t', 'y', 'x'], ['t_target', 't'], ['t', 'bands', 'y', 'x']],\n        output_core_dims=[['t_target', 'bands', 'y', 'x']],\n        vectorize=True\n    )\n    return res\n\n\ndef _compute_normalized_composite(distance_score, temporal_score, bands, **kwargs):\n    \"\"\"\n    Compute the combined distance-to-cloud and temporal score and the weighted sum applying the score by pixel and\n    input/target time stamp to generate the composites\n    \"\"\"\n    score = np.einsum('tyx,Tt->Ttyx', distance_score, temporal_score)\n    # consider pixels as not-observed if the first band has a nan value\n    score_masked = np.where(np.isnan(bands[:, 0, ...]), 0, score)\n\n    normalization_flat = np.sum(score_masked, axis=1)\n    normalization = normalization_flat[:, np.newaxis, ...]\n    score_normalized = score_masked / normalization\n\n    finite_bands = np.where(np.isfinite(bands), bands, 0)\n    weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands) # original\n\n    no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...] | (weighted_composite <= 0)\n    weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)\n    return weighted_composite_masked"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "filterbands1": {
+      "process_id": "filter_bands",
+      "arguments": {
+        "bands": [
+          "Syn_Oa04_reflectance",
+          "Syn_Oa06_reflectance",
+          "Syn_Oa08_reflectance",
+          "Syn_Oa17_reflectance"
+        ],
+        "data": {
+          "from_node": "applydimension1"
+        }
+      }
+    },
+    "applykernel1": {
+      "process_id": "apply_kernel",
+      "arguments": {
+        "border": 0,
+        "data": {
+          "from_node": "filterbands1"
+        },
+        "factor": 1.0,
+        "kernel": [
+          [
+            0.00296902,
+            0.01330621,
+            0.02193823,
+            0.01330621,
+            0.00296902
+          ],
+          [
+            0.01330621,
+            0.0596343,
+            0.09832033,
+            0.0596343,
+            0.01330621
+          ],
+          [
+            0.02193823,
+            0.09832033,
+            0.16210282,
+            0.09832033,
+            0.02193823
+          ],
+          [
+            0.01330621,
+            0.0596343,
+            0.09832033,
+            0.0596343,
+            0.01330621
+          ],
+          [
+            0.00296902,
+            0.01330621,
+            0.02193823,
+            0.01330621,
+            0.00296902
+          ]
+        ],
+        "replace_invalid": 0
+      }
+    },
+    "applydimension2": {
+      "process_id": "apply_dimension",
+      "arguments": {
+        "context": {
+          "from_node": "dimensionlabels1"
+        },
+        "data": {
+          "from_node": "applykernel1"
+        },
+        "dimension": "t",
+        "process": {
+          "process_graph": {
+            "runudf4": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "from_parameter": "context"
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "import pandas as pd\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\n\nfrom datetime import datetime, timezone\n\n\ndef apply_datacube(cube: xr.DataArray, context: list) -> xr.DataArray:\n    \"\"\"\n    Interpolate cube to the time series passed as context.\n    Currently (2025-09-30), on the CDSE OpenEO backend, the target time series can only be passed as the complete context,\n    when using the ``dimension_labels`` process. This is necessary to pass the S2 time series directly\n    from an S2 cube with a user-defined temporal extent.\n\n    This means, no further parameters can be passed via context, as it must be a list, not a dict.\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n    # TODO link CDSE forum post in doctring\n\n    assert \"bands\" in cube.dims, f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n\n    t_target = pd.DatetimeIndex(context)\n    interpolated = cube.interp(t=t_target)\n    dims = ('t' ,'bands','y', 'x')\n    return interpolated.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context: list) -> CubeMetadata:\n    if isinstance(context[0], str):\n        t_target = [datetime.fromisoformat(t).replace(tzinfo=timezone.utc) for t in context]\n    else:\n        t_target = context\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    return metadata"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "mergecubes3": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "mergecubes1"
+        },
+        "cube2": {
+          "from_node": "applydimension2"
+        }
+      }
+    },
+    "applydimension3": {
+      "process_id": "apply_dimension",
+      "arguments": {
+        "context": {
+          "t_target": {
+            "from_parameter": "target_time_series"
+          },
+          "sigma_doy": {
+            "from_parameter": "temporal_score_stddev"
+          }
+        },
+        "data": {
+          "from_node": "mergecubes3"
+        },
+        "dimension": "t",
+        "process": {
+          "process_graph": {
+            "runudf5": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "from_parameter": "context"
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "import numpy as np\nimport pandas as pd\n\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\nfrom datetime import datetime, timezone\n\n\nEPS = 1e-5\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes a composite time series. The input time series is converted to the time series passed\n    as ``\"t_target\"`` in ``context``, by computing a weighted sum of input images for each time step in\n    ``t_target``. The inputs are weighted by their temporal distance to the target time step and by the distance to\n    cloud score (the ``\"distance_score\"`` band of the inputs).\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n\n    band_names = cube.get_index(\"bands\")\n    assert \"bands\" in cube.dims, f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    assert \"distance_score\" in band_names, f\"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'\"\n    assert \"t_target\" in context, f\"The target time dimension 't_target' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n\n    t_target = pd.DatetimeIndex([datetime.fromisoformat(t) for t in context[\"t_target\"]])\n    sigma_doy = context.get(\"sigma_doy\", 5)\n    temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)\n    distance_score = cube.sel(bands=\"distance_score\")\n    data_bands = cube.sel(bands=[b for b in band_names if b != \"distance_score\"])\n\n    composite = _compute_combined_score_no_intermediates(distance_score, temporal_score, data_bands)\n\n    renamed = composite.rename({\"t_target\": \"t\"})\n    dims = ('t' ,'bands','y', 'x')\n    return renamed.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    t_target = [datetime.fromisoformat(t).replace(tzinfo=timezone.utc) for t in context[\"t_target\"]]\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    metadata = metadata.filter_bands([band.name for band in metadata.band_dimension.bands if band.name != \"distance_score\"])\n    return metadata\n\n\ndef compute_temporal_score(t: pd.DatetimeIndex, t_target: pd.DatetimeIndex, sigma_doy: float) -> xr.DataArray:\n    \"\"\"\n    Compute the temporal weight for each input and output time step.\n    Generates a two-dimensional score, mapping input time steps to output time steps (``len(t) * len(t_target)`` entries).\n\n    :param t: time stamps of the input time series\n    :param t_target: target time stamps for which the composites are to be computed\n    :param sigma_doy: standard deviation of the gaussian window used for temporal weighting\n    \"\"\"\n    t_values = t.values.astype(\"datetime64[D]\")\n    t_target_values = t_target.values.astype(\"datetime64[D]\")\n    difference_matrix = t_values[:, np.newaxis] - t_target_values[np.newaxis, :]\n\n    arr = np.exp(-0.5 * np.square(difference_matrix.astype(int))  / np.square(sigma_doy))\n    return xr.DataArray(\n        arr,\n        coords={\"t\": t, \"t_target\": t_target},\n        dims=[\"t\", \"t_target\"],\n    )\n\n\ndef compute_combined_score(distance_score: xr.DataArray, temporal_score: xr.DataArray) -> xr.DataArray:\n    # equivalent to (distance_score * temporal_score).sum(dim=\"t\")\n    #return xr.dot(distance_score, temporal_score, dim=\"t\")\n\n    combined = distance_score * temporal_score\n    # TODO remove EPS and use mask instead\n    return combined / (combined.sum(dim=\"t\") + EPS)\n\n\ndef _compute_combined_score_no_intermediates(distance_score: xr.DataArray, temporal_score: xr.DataArray, bands: xr.DataArray) -> xr.DataArray:\n    res = xr.apply_ufunc(\n        _compute_normalized_composite,\n        distance_score, temporal_score, bands,\n        input_core_dims=[['t', 'y', 'x'], ['t_target', 't'], ['t', 'bands', 'y', 'x']],\n        output_core_dims=[['t_target', 'bands', 'y', 'x']],\n        vectorize=True\n    )\n    return res\n\n\ndef _compute_normalized_composite(distance_score, temporal_score, bands, **kwargs):\n    \"\"\"\n    Compute the combined distance-to-cloud and temporal score and the weighted sum applying the score by pixel and\n    input/target time stamp to generate the composites\n    \"\"\"\n    score = np.einsum('tyx,Tt->Ttyx', distance_score, temporal_score)\n    # consider pixels as not-observed if the first band has a nan value\n    score_masked = np.where(np.isnan(bands[:, 0, ...]), 0, score)\n\n    normalization_flat = np.sum(score_masked, axis=1)\n    normalization = normalization_flat[:, np.newaxis, ...]\n    score_normalized = score_masked / normalization\n\n    finite_bands = np.where(np.isfinite(bands), bands, 0)\n    weighted_composite = np.einsum('Ttyx,tbyx->Tbyx', score_normalized, finite_bands) # original\n\n    no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...] | (weighted_composite <= 0)\n    weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)\n    return weighted_composite_masked"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "applydimension4": {
+      "process_id": "apply_dimension",
+      "arguments": {
+        "context": {
+          "from_parameter": "target_time_series"
+        },
+        "data": {
+          "from_node": "applykernel1"
+        },
+        "dimension": "t",
+        "process": {
+          "process_graph": {
+            "runudf6": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "from_parameter": "context"
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "import pandas as pd\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\n\nfrom datetime import datetime, timezone\n\n\ndef apply_datacube(cube: xr.DataArray, context: list) -> xr.DataArray:\n    \"\"\"\n    Interpolate cube to the time series passed as context.\n    Currently (2025-09-30), on the CDSE OpenEO backend, the target time series can only be passed as the complete context,\n    when using the ``dimension_labels`` process. This is necessary to pass the S2 time series directly\n    from an S2 cube with a user-defined temporal extent.\n\n    This means, no further parameters can be passed via context, as it must be a list, not a dict.\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n    # TODO link CDSE forum post in doctring\n\n    assert \"bands\" in cube.dims, f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n\n    t_target = pd.DatetimeIndex(context)\n    interpolated = cube.interp(t=t_target)\n    dims = ('t' ,'bands','y', 'x')\n    return interpolated.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context: list) -> CubeMetadata:\n    if isinstance(context[0], str):\n        t_target = [datetime.fromisoformat(t).replace(tzinfo=timezone.utc) for t in context]\n    else:\n        t_target = context\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    return metadata"
+              },
+              "result": true
+            }
+          }
+        }
+      }
+    },
+    "renamelabels1": {
+      "process_id": "rename_labels",
+      "arguments": {
+        "data": {
+          "from_node": "applydimension4"
+        },
+        "dimension": "bands",
+        "source": [
+          "Syn_Oa04_reflectance",
+          "Syn_Oa06_reflectance",
+          "Syn_Oa08_reflectance",
+          "Syn_Oa17_reflectance"
+        ],
+        "target": [
+          "Syn_Oa04_reflectance_interpolated",
+          "Syn_Oa06_reflectance_interpolated",
+          "Syn_Oa08_reflectance_interpolated",
+          "Syn_Oa17_reflectance_interpolated"
+        ]
+      }
+    },
+    "mergecubes4": {
+      "process_id": "merge_cubes",
+      "arguments": {
+        "cube1": {
+          "from_node": "applydimension3"
+        },
+        "cube2": {
+          "from_node": "renamelabels1"
+        }
+      }
+    },
+    "applydimension5": {
+      "process_id": "apply_dimension",
+      "arguments": {
+        "context": {
+          "lr_mosaic_bands": [
+            "Syn_Oa04_reflectance",
+            "Syn_Oa06_reflectance",
+            "Syn_Oa08_reflectance",
+            "Syn_Oa17_reflectance"
+          ],
+          "hr_mosaic_bands": {
+            "from_parameter": "s2_data_bands"
+          },
+          "lr_interpolated_bands": [
+            "Syn_Oa04_reflectance_interpolated",
+            "Syn_Oa06_reflectance_interpolated",
+            "Syn_Oa08_reflectance_interpolated",
+            "Syn_Oa17_reflectance_interpolated"
+          ],
+          "target_bands": {
+            "from_parameter": "fused_band_names"
+          }
+        },
+        "data": {
+          "from_node": "mergecubes4"
+        },
+        "dimension": "bands",
+        "process": {
+          "process_graph": {
+            "runudf7": {
+              "process_id": "run_udf",
+              "arguments": {
+                "context": {
+                  "from_parameter": "context"
+                },
+                "data": {
+                  "from_parameter": "data"
+                },
+                "runtime": "Python",
+                "udf": "import xarray as xr\nimport numpy as np\nfrom openeo.metadata import CubeMetadata\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes the main fusion procedure, equation (3) in [1].\n\n    [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 11. https://doi.org/10.3390/rs16111833.\n    \"\"\"\n    assert \"bands\" in cube.dims, f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    assert \"hr_mosaic_bands\" in context, f\"The high resolution mosaic bands 'hr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    assert \"lr_mosaic_bands\" in context, f\"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    assert \"lr_interpolated_bands\" in context, f\"The bands of the low resolution interpolated cube 'lr_interpolated_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n\n    hr_mosaic_bands = context[\"hr_mosaic_bands\"]\n    lr_mosaic_bands = context[\"lr_mosaic_bands\"]\n    lr_interpolated_bands = context[\"lr_interpolated_bands\"]\n    target_bands = context.get(\"target_bands\", hr_mosaic_bands)\n\n    fused = fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands)\n\n    return fused\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    target_bands = context.get(\"target_bands\", context[\"hr_mosaic_bands\"])\n    metadata = metadata.rename_labels(dimension=\"bands\", target=target_bands)\n    return metadata\n\n\ndef fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):\n\n    fused_list = [\n        # Pixels where there is no data in either lr_m or lr_p are skipped, to avoid\n        # only adding or only subtracting from the S2 composite, which would result in unusually high or low\n        # (e.g. negative values).\n        xr.where(\n            (cube.sel(bands=lr_m) == 0) | np.isnan(cube.sel(bands=lr_m)) |\n            (cube.sel(bands=lr_p) == 0) | np.isnan(cube.sel(bands=lr_p))\n        ,\n        cube.sel(bands=hr_m).squeeze(),\n        cube.sel(bands=[hr_m, lr_p]).sum(dim=\"bands\") - cube.sel(bands=lr_m).squeeze())\n        for (hr_m, lr_m, lr_p) in zip(hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands)\n    ]\n\n    fused = xr.concat(fused_list, dim=\"bands\")\n    fused = fused.assign_coords(bands=target_bands)\n    return fused\n"
+              },
+              "result": true
+            }
+          }
+        }
+      },
+      "result": true
+    }
+  }
+}
