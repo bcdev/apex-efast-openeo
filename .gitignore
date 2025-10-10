@@ -2,3 +2,5 @@ uv.lock
 test_outputs
 .idea
 tests/bug_reproducers/*.nc
+__pycache__/
+.ipynb_checkpoints/
