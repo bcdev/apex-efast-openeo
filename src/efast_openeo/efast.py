@@ -125,6 +125,7 @@ def efast_openeo(connection: openeo.Connection,
     ).band(constants.S3_FLAG_BAND)
     s3_bands = load_and_scale(
         connection=connection,
+        use_binning=True,
         collection_id=constants.S3_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
