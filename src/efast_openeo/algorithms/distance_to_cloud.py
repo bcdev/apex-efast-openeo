@@ -84,6 +84,5 @@ def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, borde
 def compute_distance_score(distance_to_cloud: openeo.DataCube, max_distance) -> openeo.DataCube:
     rescaled = (distance_to_cloud - 1) / max_distance
 
-    #return rescaled.apply("clip", context={"min": 0, "max": 1})
     score = rescaled.apply(lambda x: x.clip(min=0, max=1))
     return score.add_dimension("bands", "distance_score", type="bands")
