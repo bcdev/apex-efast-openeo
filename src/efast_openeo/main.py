@@ -179,7 +179,10 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
     # inputs
 
     print(fused.to_json())
-    fused.download(output_dir / "fused.nc")
+    if synchronous:
+        fused.download(output_dir / "fused.nc")
+    else:
+        fused.execute_batch(output_dir / "fused.nc")
     logger.info("Done")
 
 
