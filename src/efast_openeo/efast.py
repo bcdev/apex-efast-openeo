@@ -189,11 +189,15 @@ def efast_openeo(connection: openeo.Connection,
                                                          to_skip=skip_intermediates, skip_all=skip_all_intermediates)
 
     # s2 pre processing
-    s2_cloud_mask = compute_cloud_mask_s2(s2_flags)
+    # do not use output for next step, the conversion to int is only a workaround of a backend bug for downloads
+    save_intermediate(s2_flags * 1, "s2_cloud_flags", out_dir=output_dir, file_format=file_format,
+                                      synchronous=synchronous, to_skip=skip_intermediates,
+                                      skip_all=skip_all_intermediates)
+    s2_cloud_mask = compute_cloud_mask_s2(s2_flags) * 1.0 # convert to float for inspection and mean computation
     s2_cloud_mask = save_intermediate(s2_cloud_mask, "s2_cloud_mask", out_dir=output_dir, file_format=file_format,
                                       synchronous=synchronous, to_skip=skip_intermediates,
                                       skip_all=skip_all_intermediates)
-    s2_cloud_mask_mean = (s2_cloud_mask * 1.0).resample_cube_spatial(s3_bands, method="average")
+    s2_cloud_mask_mean = s2_cloud_mask.resample_cube_spatial(s3_bands, method="average")
     s2_cloud_mask_mean = save_intermediate(s2_cloud_mask_mean, "s2_cloud_mask_mean", out_dir=output_dir,
                                            file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
                                            skip_all=skip_all_intermediates)
