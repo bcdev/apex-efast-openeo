@@ -157,76 +157,23 @@
                 }
             }
         },
-        "loadcollection3": {
-            "process_id": "load_collection",
+        "resamplespatial1": {
+            "process_id": "resample_spatial",
             "arguments": {
-                "bands": [
-                    "Syn_Oa04_reflectance",
-                    "Syn_Oa06_reflectance",
-                    "Syn_Oa08_reflectance",
-                    "Syn_Oa17_reflectance"
-                ],
-                "featureflags": {
-                    "reprojection_type": "binning",
-                    "supersampling": 2
+                "align": "upper-left",
+                "data": {
+                    "from_node": "reducedimension1"
                 },
-                "id": "SENTINEL3_SYN_L2_SYN",
-                "spatial_extent": {
-                    "from_parameter": "spatial_extent"
-                },
-                "temporal_extent": {
-                    "from_parameter": "temporal_extent"
-                }
+                "method": "average",
+                "projection": null,
+                "resolution": 300
             }
         },
         "apply2": {
             "process_id": "apply",
             "arguments": {
                 "data": {
-                    "from_node": "loadcollection3"
-                },
-                "process": {
-                    "process_graph": {
-                        "add2": {
-                            "process_id": "add",
-                            "arguments": {
-                                "x": {
-                                    "from_parameter": "x"
-                                },
-                                "y": 0
-                            }
-                        },
-                        "multiply3": {
-                            "process_id": "multiply",
-                            "arguments": {
-                                "x": {
-                                    "from_node": "add2"
-                                },
-                                "y": 0.0001
-                            },
-                            "result": true
-                        }
-                    }
-                }
-            }
-        },
-        "resamplecubespatial1": {
-            "process_id": "resample_cube_spatial",
-            "arguments": {
-                "data": {
-                    "from_node": "reducedimension1"
-                },
-                "method": "average",
-                "target": {
-                    "from_node": "apply2"
-                }
-            }
-        },
-        "apply3": {
-            "process_id": "apply",
-            "arguments": {
-                "data": {
-                    "from_node": "resamplecubespatial1"
+                    "from_node": "resamplespatial1"
                 },
                 "process": {
                     "process_graph": {
@@ -248,7 +195,7 @@
             "process_id": "apply_neighborhood",
             "arguments": {
                 "data": {
-                    "from_node": "apply3"
+                    "from_node": "apply2"
                 },
                 "overlap": [
                     {
@@ -295,7 +242,7 @@
                 ]
             }
         },
-        "apply4": {
+        "apply3": {
             "process_id": "apply",
             "arguments": {
                 "data": {
@@ -326,11 +273,11 @@
                 }
             }
         },
-        "apply5": {
+        "apply4": {
             "process_id": "apply",
             "arguments": {
                 "data": {
-                    "from_node": "apply4"
+                    "from_node": "apply3"
                 },
                 "process": {
                     "process_graph": {
@@ -353,7 +300,7 @@
             "process_id": "add_dimension",
             "arguments": {
                 "data": {
-                    "from_node": "apply5"
+                    "from_node": "apply4"
                 },
                 "label": "distance_score",
                 "name": "bands",
@@ -378,6 +325,59 @@
                     "from_node": "apply1"
                 },
                 "dimension": "t"
+            }
+        },
+        "loadcollection3": {
+            "process_id": "load_collection",
+            "arguments": {
+                "bands": [
+                    "Syn_Oa04_reflectance",
+                    "Syn_Oa06_reflectance",
+                    "Syn_Oa08_reflectance",
+                    "Syn_Oa17_reflectance"
+                ],
+                "featureflags": {
+                    "reprojection_type": "binning",
+                    "supersampling": 2
+                },
+                "id": "SENTINEL3_SYN_L2_SYN",
+                "spatial_extent": {
+                    "from_parameter": "spatial_extent"
+                },
+                "temporal_extent": {
+                    "from_parameter": "temporal_extent"
+                }
+            }
+        },
+        "apply5": {
+            "process_id": "apply",
+            "arguments": {
+                "data": {
+                    "from_node": "loadcollection3"
+                },
+                "process": {
+                    "process_graph": {
+                        "add2": {
+                            "process_id": "add",
+                            "arguments": {
+                                "x": {
+                                    "from_parameter": "x"
+                                },
+                                "y": 0
+                            }
+                        },
+                        "multiply3": {
+                            "process_id": "multiply",
+                            "arguments": {
+                                "x": {
+                                    "from_node": "add2"
+                                },
+                                "y": 0.0001
+                            },
+                            "result": true
+                        }
+                    }
+                }
             }
         },
         "loadcollection4": {
@@ -547,7 +547,7 @@
             "process_id": "merge_cubes",
             "arguments": {
                 "cube1": {
-                    "from_node": "apply2"
+                    "from_node": "apply5"
                 },
                 "cube2": {
                     "from_node": "adddimension2"
