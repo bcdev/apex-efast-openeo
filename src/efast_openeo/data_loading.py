@@ -22,7 +22,7 @@ def load_and_scale(connection: openeo.Connection, use_binning: bool = True, **kw
     cube = connection.load_collection(**kwargs)
     if use_binning:
         cube.result_node().update_arguments(
-            featureflags=dict(reprojection_type="binning", supersampling=2)
+            featureflags=dict(reprojection_type="binning", super_sampling=2)
         )
     cube_scaled = cube.apply(lambda x: (x + offset) * scale)
     return cube_scaled
