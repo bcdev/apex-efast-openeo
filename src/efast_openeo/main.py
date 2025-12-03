@@ -94,7 +94,7 @@ def parse_bands(ctx, param, value):
 @click.option(
     "--s3-data-bands",
     callback=parse_bands,
-    default="Syn_Oa08_reflectance,Syn_Oa17_reflectance",
+    default="Syn_Oa04_reflectance,Syn_Oa06_reflectance",
     help="S3 bands (excluding flag band)"
 )
 @click.option(
