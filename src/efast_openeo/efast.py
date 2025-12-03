@@ -152,7 +152,8 @@ def efast_openeo(connection: openeo.Connection,
                                  synchronous=synchronous, to_skip=skip_intermediates, skip_all=skip_all_intermediates)
 
     # s3 composites
-    s3_dtc_overlap_length_px = int(max_distance_to_cloud_m * 1.1) // constants.S3_RESOLUTION_M
+    overlap_factor = 10
+    s3_dtc_overlap_length_px = int(max_distance_to_cloud_m * overlap_factor) // constants.S3_RESOLUTION_M
     s3_dtc_patch_length_px = s3_dtc_overlap_length_px * 2
 
     logger.info(f"Setting {s3_dtc_patch_length_px=} and {s3_dtc_overlap_length_px=}")
