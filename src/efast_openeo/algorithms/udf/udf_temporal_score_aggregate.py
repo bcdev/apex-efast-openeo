@@ -104,3 +104,51 @@ def _compute_normalized_composite(distance_score, temporal_score, bands, **kwarg
     no_data_mask = (normalization_flat == 0)[:, np.newaxis, ...] | (weighted_composite <= 0)
     weighted_composite_masked = np.where(no_data_mask, np.nan, weighted_composite)
     return weighted_composite_masked
+
+
+def apply_datacube_new(cube: xr.DataArray, context: dict) -> xr.DataArray:
+    band_names = cube.get_index("bands")
+    assert "bands" in cube.dims, f"cube must have a 'bands' dimension, found '{cube.dims}'"
+    assert "distance_score" in band_names, f"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'"
+    assert "t_target" in context, f"The target time dimension 't_target' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
+
+    t_target = pd.DatetimeIndex([datetime.fromisoformat(t) for t in context["t_target"]])
+    sigma_doy = context.get("sigma_doy", 5)
+    temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)
+    distance_score = cube.sel(bands="distance_score")
+    data_bands = cube.sel(bands=[b for b in band_names if b != "distance_score"])
+
+    composite = _compute_combined_score_ng(distance_score, temporal_score, data_bands)
+
+    renamed = composite.rename({"t_target": "t"})
+    dims = ('t' ,'bands','y', 'x')
+    return renamed.transpose(*dims)
+
+
+def _compute_combined_score_ng(distance_score, temporal_score, bands):
+    mosaic_days = 100
+    composites = {}
+
+    # TODO convert to "rolling"?
+    for middle_date in temporal_score.t_target:
+        window_start = middle_date - pd.Timedelta(days=mosaic_days / 2)
+        window_end = middle_date + pd.Timedelta(days=mosaic_days / 2)
+
+        windowed_bands = bands.sel(t=slice(window_start, window_end))
+        windowed_bands = xr.where(np.abs(windowed_bands.mean(dim="t")) < 5, windowed_bands, np.nan)
+        windowed_distance_score = distance_score.sel(t=slice(window_start, window_end))
+        windowed_temporal_score = temporal_score.sel(t=slice(window_start, window_end), t_target=middle_date)
+
+        score = windowed_distance_score * windowed_temporal_score
+        score_nan_masked = xr.where(np.isnan(windowed_bands.isel(bands=0)), 0, score)
+        #score_nan_masked = score
+        normalizing_coefficient = score_nan_masked.sum(dim="t") + 1e-5
+        normalized_score = score_nan_masked / normalizing_coefficient
+
+        composite = (normalized_score * windowed_bands).sum(skipna=True, dim="t")
+        composite = xr.where(normalized_score.sum(dim="t") == 0, np.nan, composite)
+        composites[pd.to_datetime(middle_date.item()).strftime("%Y-%m-%d")] = composite
+        #import pdb
+        #pdb.set_trace()
+    composite_da = xr.concat([composites[t_target] for t_target in composites], dim=xr.IndexVariable("t_target", list(composites.keys())))
+    return composite_da
