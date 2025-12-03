@@ -238,6 +238,9 @@ def efast_openeo(connection: openeo.Connection,
                                                                           source=s3_data_bands)
     s3_composite_s2_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands_smoothed,
                                                                       s2_bands.dimension_labels("t"))
+    s3_composite_s2_interp = save_intermediate(s3_composite_s2_interp, "s3_composite_s2_interp", out_dir=output_dir,
+                                               file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
+                                               skip_all=skip_all_intermediates)
 
     # s2/3 aggregate
     s2_bands_dtc_merge = s2_bands_masked.merge_cubes(s2_distance_score)
