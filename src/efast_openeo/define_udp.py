@@ -57,14 +57,14 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     #    default=5000,
     #)
 
-    temporal_score_stddev = Parameter.number(
-        name="temporal_score_stddev",
-        description=(
-            "Standard deviation (in days) of the gaussian window used for temporal composites. "
-            "A larger number means that observations further away from the target date receive a stronger weight."
-        ),
-        default=10,
-    )
+    #temporal_score_stddev = Parameter.number(
+    #    name="temporal_score_stddev",
+    #    description=(
+    #        "Standard deviation (in days) of the gaussian window used for temporal composites. "
+    #        "A larger number means that observations further away from the target date receive a stronger weight."
+    #    ),
+    #    default=10,
+    #)
 
     # FIXME This parameter can't be used (yet) because the call to ``rename_bands`` fails which is used
     # to distinguish the bands from interpolated and composite S3 cubes that are combined in the final fusion step.
@@ -120,7 +120,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         spatial_extent,
         target_time_series,
         #max_distance_to_cloud_m, # parameter can't define overlap of apply_neighborhood
-        temporal_score_stddev,
+        #temporal_score_stddev,
         #s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
         s2_data_bands,
         fused_band_names,
@@ -145,7 +145,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     file_format = None
     synchronous = None
 
-    process_graph = efast_openeo(connection=connection, max_distance_to_cloud_m=max_distance_to_cloud_m, temporal_score_stddev=temporal_score_stddev, t_s3_composites=t_s3_composites, t_target=target_time_series, temporal_extent=temporal_extent,
+    process_graph = efast_openeo(connection=connection, max_distance_to_cloud_m=max_distance_to_cloud_m, t_s3_composites=t_s3_composites, t_target=target_time_series, temporal_extent=temporal_extent,
                  bbox=spatial_extent, s3_data_bands=s3_data_bands, s2_data_bands=s2_data_bands, fused_band_names=fused_band_names, output_dir=output_dir, save_intermediates=save_intermediates, synchronous=synchronous,
                  skip_intermediates=skip_intermediates, file_format=file_format, cloud_tolerance_percentage=cloud_tolerance_percentage)
 
