@@ -36,19 +36,22 @@ def save_intermediate(cube, name: str, out_dir: str | Path, file_format: str, sy
         logger.info(f"Skipping intermediate '{name}'")
         return cube
 
+    suffix = ".nc"
+    if file_format.lower().strip(".") in ["tif", "geotiff", "tiff"]:
+        suffix = ".tif"
+    name = Path(name).with_suffix(suffix)
+
     if synchronous:
-        suffix = ".nc"
-        if file_format.lower().strip(".") in ["tif", "geotiff", "tiff"]:
-            suffix = ".tif"
-        name = Path(name).with_suffix(suffix)
         logger.info(f"downloading '{name}' (sync)")
         cube.download(Path(out_dir) / name)
         return cube
 
     # TODO name should be used
     with_save_result = cube.save_result(format=file_format)
+    logger.info(f"Execute batch: '{name}' (half sync)")
+    with_save_result.execute_batch(outputfile=Path(out_dir) / name, title=str(name))
     logger.info(f"Adding '{name}' to results (async)")
-    return with_save_result
+    return cube
 
 
 def efast_openeo(connection: openeo.Connection,
