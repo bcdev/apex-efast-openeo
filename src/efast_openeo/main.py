@@ -44,16 +44,6 @@ def parse_bands(ctx, param, value):
     )
 )
 @click.option(
-    "--temporal-score-stddev",
-    type=float,
-    default=5,
-    show_default=True,
-    help=(
-            # TODO reference paper
-            "Standard deviation (in days) of the temporal window used to compute weighted aggregates. Sigma_doy in the original"
-    )
-)
-@click.option(
     "--t-start",
     required=True,
     type=str,
@@ -140,7 +130,7 @@ def parse_bands(ctx, param, value):
     type=float,
     help="Percentage of a S3 pixel covered by S2 cloud from which it is considered cloudy."
 )
-def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3_composite_interval, target_interval,
+def main(max_distance_to_cloud_m, t_start, t_end_excl, s3_composite_interval, target_interval,
          bbox, s3_data_bands, s2_data_bands, fused_band_names, output_dir, save_intermediates, synchronous,
          skip_intermediates, file_format, cloud_tolerance_percentage):
     output_dir = Path(output_dir).resolve()
@@ -173,7 +163,7 @@ def main(max_distance_to_cloud_m, temporal_score_stddev, t_start, t_end_excl, s3
         with open(output_dir / "t_s3_composites.txt", "w") as fp:
             fp.write(str(t_s3_composites))
 
-    fused = efast_openeo(connection=connection, max_distance_to_cloud_m=max_distance_to_cloud_m, temporal_score_stddev=temporal_score_stddev, temporal_extent=[t_start, t_end_excl], t_s3_composites=t_s3_composites, t_target=t_target,
+    fused = efast_openeo(connection=connection, max_distance_to_cloud_m=max_distance_to_cloud_m, temporal_extent=[t_start, t_end_excl], t_s3_composites=t_s3_composites, t_target=t_target,
                          bbox=bbox, s3_data_bands=s3_data_bands, s2_data_bands=s2_data_bands, fused_band_names=fused_band_names, output_dir=output_dir, save_intermediates=save_intermediates, synchronous=synchronous,
                          skip_intermediates=skip_intermediates, file_format=file_format, cloud_tolerance_percentage=cloud_tolerance_percentage)
     # inputs

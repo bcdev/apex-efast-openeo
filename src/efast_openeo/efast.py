@@ -56,7 +56,6 @@ def save_intermediate(cube, name: str, out_dir: str | Path, file_format: str, sy
 
 def efast_openeo(connection: openeo.Connection,
                  max_distance_to_cloud_m: int,
-                 temporal_score_stddev: float,
                  temporal_extent: List[str],
                  t_s3_composites: List[str],
                  t_target: List[str],
@@ -94,7 +93,6 @@ def efast_openeo(connection: openeo.Connection,
 
          :param connection: Authenticated connection to an openeo backend
          :param max_distance_to_cloud_m: Maximum distance to cloud to be considered in the distance score
-         :param temporal_score_stddev: Standard deviation of the temporal score gaussian
          :param temporal_extent: temporal extent of all input cubes
          :param t_s3_composites: time series on which to create the Sentinel-3 composites (before interpolation).
             Should be passed as a list of strings, e.g ["2022-01-01", "2022-01-03", "2022-01-05"]
@@ -180,7 +178,7 @@ def efast_openeo(connection: openeo.Connection,
                                                     synchronous=synchronous, to_skip=skip_intermediates,
                                                     skip_all=skip_all_intermediates)
     s3_composite = compute_weighted_composite(s3_bands_and_distance_score, t_s3_composites,
-                                              sigma_doy=temporal_score_stddev)
+                                              sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV)
     s3_composite_data_bands = s3_composite.filter_bands(s3_data_bands)
     s3_composite_data_bands = save_intermediate(s3_composite_data_bands, "s3_composite_data_bands", out_dir=output_dir,
                                                 file_format=file_format, synchronous=synchronous,
@@ -254,7 +252,7 @@ def efast_openeo(connection: openeo.Connection,
                                                   to_skip=skip_intermediates, skip_all=skip_all_intermediates)
 
     s2_s3_aggregate = compute_weighted_composite(s2_s3_pre_aggregate_merge, target_time_series=t_target,
-                                                 sigma_doy=temporal_score_stddev)
+                                                 sigma_doy=constants.S2_TEMPORAL_SCORE_STDDEV)
     s2_s3_aggregate = save_intermediate(s2_s3_aggregate, "s2_s3_aggregate", out_dir=output_dir, file_format=file_format,
                                         synchronous=synchronous, to_skip=skip_intermediates,
                                         skip_all=skip_all_intermediates)
