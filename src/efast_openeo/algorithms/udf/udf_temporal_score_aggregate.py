@@ -145,10 +145,9 @@ def _compute_combined_score_ng(distance_score, temporal_score, bands):
         normalizing_coefficient = score_nan_masked.sum(dim="t") + 1e-5
         normalized_score = score_nan_masked / normalizing_coefficient
 
-        composite = (normalized_score * windowed_bands).sum(skipna=True, dim="t")
+        weighted_bands = normalized_score * windowed_bands
+        composite = weighted_bands.sum(skipna=True, dim="t")
         composite = xr.where(normalized_score.sum(dim="t") == 0, np.nan, composite)
         composites[pd.to_datetime(middle_date.item()).strftime("%Y-%m-%d")] = composite
-        #import pdb
-        #pdb.set_trace()
     composite_da = xr.concat([composites[t_target] for t_target in composites], dim=xr.IndexVariable("t_target", list(composites.keys())))
     return composite_da
