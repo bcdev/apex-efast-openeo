@@ -152,9 +152,9 @@ def main(max_distance_to_cloud_m, t_start, t_end_excl, s3_composite_interval, ta
     logger.info(f"Max distance to cloud: '{max_distance_to_cloud_s3_px:.2f} pixels'")
 
     # TODO verify that t_start and t_end_excl are formatted correctly
-    t_s3_composites_dt = xr.date_range(t_start, t_end_excl, freq=s3_composite_interval)
+    t_s3_composites_dt = xr.date_range(t_start, t_end_excl, freq=s3_composite_interval, inclusive="left")
     t_s3_composites = [d.isoformat() for d in t_s3_composites_dt.to_pydatetime()]
-    t_target_dt = xr.date_range(t_start, t_end_excl, freq=target_interval)
+    t_target_dt = xr.date_range(t_start, t_end_excl, freq=target_interval, inclusive="left")
     t_target = [d.isoformat() for d in t_target_dt.to_pydatetime()]
 
     if save_intermediates:
