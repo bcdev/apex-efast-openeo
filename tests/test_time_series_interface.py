@@ -30,47 +30,6 @@ def interval_days():
     return 2
 
 
-def test_date_range_output(
-    connection,
-    temporal_extent,
-    s3_bands,
-    s2_bands,
-    aoi_bounding_box,
-    dtc_max_distance,
-    temporal_extent_target,
-    interval_days,
-    tmp_path,
-):
-    s2_data_bands = list(set(s2_bands) - {constants.S2_FLAG_BAND})
-    s3_data_bands = list(set(s3_bands) - {constants.S3_FLAG_BAND})
-    fused_band_names = [b + "_fused" for b in s2_data_bands]
-    cloud_tolerance_percentage = 0.05
-
-    out_path = tmp_path / "outputs"
-    out_path.mkdir()
-
-    # TODO could be a partial function with only temporal extent
-    cube = efast_openeo(
-        connection,
-        max_distance_to_cloud_m=dtc_max_distance,
-        temporal_extent=temporal_extent,
-        bbox=aoi_bounding_box,
-        s3_data_bands=s3_data_bands,
-        s2_data_bands=s2_data_bands,
-        fused_band_names=fused_band_names,
-        output_path=out_path,
-        save_intermediates=False,
-        synchronous=False,
-        skip_intermediates=[],
-        file_format="netcdf",
-        cloud_tolerance_percentage=cloud_tolerance_percentage,
-        temporal_extent_target=temporal_extent_target,
-        interval_days=interval_days,
-    )
-
-    time_labels = cube.dimension_labels("t").compute_result()
-
-
 def test_date_range_s3_composites(
     connection,
     time_frame,
