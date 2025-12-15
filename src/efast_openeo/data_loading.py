@@ -1,5 +1,6 @@
 import openeo
 
+
 def load_and_scale(connection: openeo.Connection, use_binning: bool = True, **kwargs):
     """
     Applies offset and scale factor to a cube right after load_collection.
@@ -12,12 +13,18 @@ def load_and_scale(connection: openeo.Connection, use_binning: bool = True, **kw
 
     metadata = connection.describe_collection(kwargs["collection_id"])
 
-    scale = metadata.get("summaries", {}).get("raster:bands", [{}])[0].get("scale", None)
-    offset = metadata.get("summaries", {}).get("raster:bands", [{}])[0].get("offset", None)
+    scale = (
+        metadata.get("summaries", {}).get("raster:bands", [{}])[0].get("scale", None)
+    )
+    offset = (
+        metadata.get("summaries", {}).get("raster:bands", [{}])[0].get("offset", None)
+    )
     if scale is None:
         scale = metadata.get("summaries", {}).get("eo:bands", [{}])[0].get("scale", 1.0)
     if offset is None:
-        offset = metadata.get("summaries", {}).get("eo:bands", [{}])[0].get("offset", 1.0)
+        offset = (
+            metadata.get("summaries", {}).get("eo:bands", [{}])[0].get("offset", 1.0)
+        )
 
     cube = connection.load_collection(**kwargs)
     if use_binning:

@@ -14,6 +14,7 @@ S3_COLLECTION = "SENTINEL3_SYN_L2_SYN"
 TEST_OUTPUT_DIR_DEFAULT = "test_outputs"
 TEST_OUTPUT_DIR_ENV_VAR = "TEST_OUTPUT_DIR"
 
+
 @pytest.fixture
 def persistent_output_dir_base() -> Path:
     leaf = Path(os.getenv(TEST_OUTPUT_DIR_ENV_VAR, TEST_OUTPUT_DIR_DEFAULT))
@@ -26,12 +27,14 @@ def persistent_output_dir_base() -> Path:
 @pytest.fixture
 def file_extension():
     return ".nc"
-    #return ".nc"
+    # return ".nc"
+
 
 @pytest.fixture
 def download_style():
     return "download"
-    #return "execute_batch"
+    # return "execute_batch"
+
 
 @pytest.fixture
 def execute(download_style):
@@ -40,27 +43,31 @@ def execute(download_style):
 
     return wrapper
 
+
 @pytest.fixture
 def run_openeo(execute, file_extension):
     def run(cube, target):
         execute(cube)(target.with_suffix(file_extension))
+
     return run
+
 
 @pytest.fixture
 def aoi_bounding_box():
     directions = ["west", "south", "east", "north"]
     bbox_list = [-15.456047, 15.665024, -15.425491, 15.687501]
-    #bbox_list = [-15.456047, 15.665024, -16.0, 16.0]
+    # bbox_list = [-15.456047, 15.665024, -16.0, 16.0]
     bbox = {d: c for (d, c) in zip(directions, bbox_list)}
     return bbox
 
 
 @pytest.fixture
 def time_frame():
-    #return ["2022-06-03", "2022-06-03"]
-    #return ["2022-09-22", "2022-09-26"] # Interesting cloud/no cloud pattern in S3
-    #return ["2022-09-26", "2022-09-27"] # single day with cloudy s2 observation
+    # return ["2022-06-03", "2022-06-03"]
+    # return ["2022-09-22", "2022-09-26"] # Interesting cloud/no cloud pattern in S3
+    # return ["2022-09-26", "2022-09-27"] # single day with cloudy s2 observation
     return ["2022-09-07", "2022-09-27"]
+
 
 @pytest.fixture
 def s2_dim_labels(s2_cube):
@@ -73,6 +80,7 @@ def s2_dim_labels(s2_cube):
     dim_labels_path.close()
     return dim_labels
 
+
 @pytest.fixture
 def s2_time_series(s2_dim_labels):
     dt = pd.to_datetime(s2_dim_labels)
@@ -84,23 +92,25 @@ def s2_time_series(s2_dim_labels):
 @pytest.fixture
 def connection(capsys):
     with capsys.disabled():
-        #conn = openeo.connect("http://cate:8080").authenticate_oidc()
-        #conn =  openeo.connect("http://localhost:8080").authenticate_oidc()
-        conn =  openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
+        # conn = openeo.connect("http://cate:8080").authenticate_oidc()
+        # conn =  openeo.connect("http://localhost:8080").authenticate_oidc()
+        conn = openeo.connect(
+            "https://openeo.dataspace.copernicus.eu/"
+        ).authenticate_oidc()
     return conn
 
 
 @pytest.fixture
 def s2_bands():
     return ["SCL", "B02", "B03"]
-    #return ["B02", "B03", "B04", "B8A", "SCL"]
+    # return ["B02", "B03", "B04", "B8A", "SCL"]
 
 
 @pytest.fixture
 def s3_bands():
     return [
-        #"Syn_Oa04_reflectance",
-        #"Syn_Oa06_reflectance",
+        # "Syn_Oa04_reflectance",
+        # "Syn_Oa06_reflectance",
         "Syn_Oa08_reflectance",
         "Syn_Oa17_reflectance",
         "CLOUD_flags",
@@ -116,6 +126,7 @@ def s2_cube(connection, aoi_bounding_box, time_frame, s2_bands):
         bands=s2_bands,
     )
 
+
 @pytest.fixture
 def s3_cube(connection, aoi_bounding_box, time_frame, s3_bands):
     return connection.load_collection(
@@ -124,6 +135,7 @@ def s3_cube(connection, aoi_bounding_box, time_frame, s3_bands):
         temporal_extent=time_frame,
         bands=s3_bands,
     )
+
 
 @pytest.fixture
 def image_size_pixels() -> int:

@@ -7,21 +7,25 @@ import click
 import openeo
 from efast_openeo.define_udp import create_efast_udp
 
+
 @click.group()
 def cli():
     pass
 
+
 @cli.command()
 @click.argument("json_path", type=click.Path(path_type=Path))
 def export(json_path: Path):
-    connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
+    connection = openeo.connect(
+        "https://openeo.dataspace.copernicus.eu/"
+    ).authenticate_oidc()
     params, process_graph = create_efast_udp(connection)
     pg_with_metadata = openeo.rest.udp.build_process_dict(
         process_graph,
         process_id="efast",
         summary="efast",
         description="efast",
-        parameters=params
+        parameters=params,
     )
 
     with open(json_path, "w") as fh:
@@ -30,7 +34,9 @@ def export(json_path: Path):
 
 @cli.command()
 def run():
-    connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
+    connection = openeo.connect(
+        "https://openeo.dataspace.copernicus.eu/"
+    ).authenticate_oidc()
     params, process_graph = create_efast_udp(connection)
     process_id = "efast"
     connection.save_user_defined_process(
@@ -57,7 +63,6 @@ def run():
         ],
         s2_data_bands=["B02", "B03", "B04", "B8A"],
         fused_band_names=["B02_fused", "B03_fused", "B04_fused", "B8A_fused"],
-
     )
     job = cube.create_job()
     job.start()

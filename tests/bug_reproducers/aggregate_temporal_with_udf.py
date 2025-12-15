@@ -1,13 +1,16 @@
 import openeo
 
+
 def aoi_bounding_box():
     directions = ["west", "south", "east", "north"]
     bbox_list = [-15.456047, 15.665024, -15.425491, 15.687501]
     bbox = {d: c for (d, c) in zip(directions, bbox_list)}
     return bbox
+
+
 AOI = aoi_bounding_box()
 
-UDF = '''
+UDF = """
 import numpy as np
 import xarray as xr
 from openeo.udf import XarrayDataCube, inspect
@@ -21,14 +24,21 @@ def apply_datacube(cube: XarrayDataCube, context: dict) -> XarrayDataCube:
     )
 
     return XarrayDataCube(res)
-'''
+"""
 
 TIME_FRAME = ["2022-09-20", "2022-09-25"]
 
+
 def s3_cloud_mask(conn):
-    cube = conn.load_collection("SENTINEL3_SYN_L2_SYN", temporal_extent=TIME_FRAME, spatial_extent=AOI, bands=["CLOUD_flags"])
+    cube = conn.load_collection(
+        "SENTINEL3_SYN_L2_SYN",
+        temporal_extent=TIME_FRAME,
+        spatial_extent=AOI,
+        bands=["CLOUD_flags"],
+    )
     cloud_mask = cube.band("CLOUD_flags") > 0
     return cloud_mask
+
 
 def main():
     conn = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
@@ -54,6 +64,7 @@ def main():
     )
     print(agg.to_json())
     agg.download("agg.nc")
+
 
 if __name__ == "__main__":
     main()

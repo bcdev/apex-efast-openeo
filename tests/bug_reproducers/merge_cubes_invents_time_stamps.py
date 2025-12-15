@@ -1,10 +1,12 @@
 import openeo
 
+
 def aoi_bounding_box():
     directions = ["west", "south", "east", "north"]
     bbox_list = [-15.456047, 15.665024, -15.425491, 15.687501]
     bbox = {d: c for (d, c) in zip(directions, bbox_list)}
     return bbox
+
 
 TIME_FRAME = ["2022-09-07", "2022-09-27"]
 
@@ -16,7 +18,9 @@ def apply_datacube(cube: XarrayDataCube, context: dict) -> XarrayDataCube:
 
 
 def main():
-    connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
+    connection = openeo.connect(
+        "https://openeo.dataspace.copernicus.eu/"
+    ).authenticate_oidc()
     s2_cube = connection.load_collection(
         "SENTINEL2_L2A",
         spatial_extent=aoi_bounding_box(),
@@ -60,7 +64,9 @@ def main():
 
 
 def main_with_workaround():
-    connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
+    connection = openeo.connect(
+        "https://openeo.dataspace.copernicus.eu/"
+    ).authenticate_oidc()
     s2_cube_b08 = connection.load_collection(
         "SENTINEL2_L2A",
         spatial_extent=aoi_bounding_box(),
@@ -110,8 +116,9 @@ def main_with_workaround():
     merged1.dimension_labels("t").download("wa_merged1_time_labels.json")
     merged2.dimension_labels("t").download("wa_merged2_time_labels.json")
 
-    #merged2.download("merged2.nc")
+    # merged2.download("merged2.nc")
 
-if __name__ == '__main__':
-    #main()
+
+if __name__ == "__main__":
+    # main()
     main_with_workaround()

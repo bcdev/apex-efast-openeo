@@ -3,10 +3,18 @@ from typing import List
 import openeo
 
 
-UDF_FUSION_SCORE = importlib.resources.files("efast_openeo.algorithms.udf").joinpath("udf_fusion.py")
+UDF_FUSION_SCORE = importlib.resources.files("efast_openeo.algorithms.udf").joinpath(
+    "udf_fusion.py"
+)
 
 
-def fusion(cube, high_resolution_mosaic_band_names: List[str], low_resolution_mosaic_band_names: List[str], low_resolution_interpolated_band_names, target_band_names: List[str] | None=None):
+def fusion(
+    cube,
+    high_resolution_mosaic_band_names: List[str],
+    low_resolution_mosaic_band_names: List[str],
+    low_resolution_interpolated_band_names,
+    target_band_names: List[str] | None = None,
+):
     """
     The EFAST fusion procedure combines two temporally and spatially weighted composites (called "mosaics") of
     low resolution (Sentinel-3) and high resolution (Sentinel-2) imagery with a temporally interpolated
@@ -34,8 +42,9 @@ def fusion(cube, high_resolution_mosaic_band_names: List[str], low_resolution_mo
         ``low_resolution_band_names`` and ``high_resolution_band_names``.
     """
 
-
-    udf = openeo.UDF.from_file(UDF_FUSION_SCORE, context={"from_parameter": "context"}, runtime="Python")#, version="3")
+    udf = openeo.UDF.from_file(
+        UDF_FUSION_SCORE, context={"from_parameter": "context"}, runtime="Python"
+    )  # , version="3")
     context = {
         "lr_mosaic_bands": low_resolution_mosaic_band_names,
         "hr_mosaic_bands": high_resolution_mosaic_band_names,

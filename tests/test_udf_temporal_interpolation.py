@@ -13,12 +13,17 @@ def test_temporal_interpolation_shape():
     n_bands = 2
     y, x = 3, 4
 
-    data = np.arange(np.prod((len(t), n_bands, y, x)), dtype=np.float32).reshape(len(t), n_bands, y, x)
-    band0 = np.tile([
-        [1, 2, 3, 4],
-        [0.1, 0.2, 0.3, 0.4],
-        [0.01, 0.02, 0.03, 0.04],
-    ], (len(t), 1,1))
+    data = np.arange(np.prod((len(t), n_bands, y, x)), dtype=np.float32).reshape(
+        len(t), n_bands, y, x
+    )
+    band0 = np.tile(
+        [
+            [1, 2, 3, 4],
+            [0.1, 0.2, 0.3, 0.4],
+            [0.01, 0.02, 0.03, 0.04],
+        ],
+        (len(t), 1, 1),
+    )
     data[:, 0, :, :] = band0
 
     cube = xr.DataArray(data, dims=["t", "bands", "y", "x"], coords={"t": t})

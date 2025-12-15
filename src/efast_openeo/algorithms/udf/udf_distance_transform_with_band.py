@@ -3,6 +3,7 @@ import numpy as np
 import xarray as xr
 from openeo.udf import XarrayDataCube
 
+
 def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     """
     Expects the cloud mask as input (in contrast to ``distance_transform_edt``).
@@ -13,4 +14,6 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     if not array.any():
         return xr.DataArray(np.full_like(array, np.nan), dims=["bands", "t", "y", "x"])
     distance = distance_transform_edt(np.logical_not(array.isel(bands=0)))
-    return xr.DataArray(distance.expand_dims(dim="bands", axis=0), dims=["bands", "t", "y", "x"])
+    return xr.DataArray(
+        distance.expand_dims(dim="bands", axis=0), dims=["bands", "t", "y", "x"]
+    )

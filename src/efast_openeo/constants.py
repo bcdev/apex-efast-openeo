@@ -1,5 +1,6 @@
 from enum import IntEnum, IntFlag
 
+
 class S2Scl(IntEnum):
     NO_DATA = 0
     DEFECTIVE = 1
@@ -16,11 +17,11 @@ class S2Scl(IntEnum):
 
 
 class S3SynCloudFlags(IntFlag):
-    CLEAR           = 0b0000
-    CLOUD           = 0b0001
+    CLEAR = 0b0000
+    CLOUD = 0b0001
     CLOUD_AMBIGUOUS = 0b0010
-    CLOUD_MARGIN    = 0b0100
-    SNOW_ICE        = 0b1000
+    CLOUD_MARGIN = 0b0100
+    SNOW_ICE = 0b1000
 
 
 S3_RESOLUTION_DEG = 0.00297619047619

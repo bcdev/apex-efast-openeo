@@ -17,6 +17,7 @@ def test_temporal_score_shape():
     assert score.t.shape == (len(t),)
     assert score.t_target.shape == (len(t_target),)
 
+
 def test_fuse():
     t_start = "2022-09-01"
     t_end = "2022-09-30"
@@ -37,7 +38,7 @@ def test_fuse():
             "t": t,
             "bands": input_bands,
         },
-        dims=["t", "bands", "y", "x"]
+        dims=["t", "bands", "y", "x"],
     )
     hr_m_val = 10
     lr_m_val = 1
@@ -49,6 +50,6 @@ def test_fuse():
     fused = fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interp_bands, target_bands)
 
     assert len(fused["bands"]) == len(target_bands)
-    assert all([b in target_bands for b in  fused["bands"]])
+    assert all([b in target_bands for b in fused["bands"]])
     target_value = lr_interp_val + hr_m_val - lr_m_val
     assert (fused.sel(bands=target_bands) == target_value).all()

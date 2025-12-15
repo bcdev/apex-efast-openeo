@@ -4,19 +4,34 @@ import openeo
 
 from efast_openeo.constants import S2Scl, S3SynCloudFlags
 
-UDF_DISTANCE_TRANSFORM_PATH = importlib.resources.files("efast_openeo.algorithms.udf").joinpath("udf_distance_transform.py")
+UDF_DISTANCE_TRANSFORM_PATH = importlib.resources.files(
+    "efast_openeo.algorithms.udf"
+).joinpath("udf_distance_transform.py")
+
 
 # TODO move
 def compute_cloud_mask_s2(s2_scl: openeo.DataCube) -> openeo.DataCube:
-    #return s2_scl > S2Scl.WATER
-    return (s2_scl == S2Scl.NO_DATA) | (s2_scl == S2Scl.CLOUD_SHADOW) | (s2_scl > S2Scl.UNCLASSIFIED)
+    # return s2_scl > S2Scl.WATER
+    return (
+        (s2_scl == S2Scl.NO_DATA)
+        | (s2_scl == S2Scl.CLOUD_SHADOW)
+        | (s2_scl > S2Scl.UNCLASSIFIED)
+    )
+
 
 # TODO move
 def compute_cloud_mask_s3(s3_scl: openeo.DataCube) -> openeo.DataCube:
     return s3_scl > S3SynCloudFlags.CLEAR
 
 
-def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, max_distance_pixels: int | None=None, pixel_size_native_units: int | float | None=None, max_distance_native_units: int | float | None=None):
+def distance_to_cloud(
+    cloud_mask: openeo.DataCube,
+    image_size_pixels: int,
+    *,
+    max_distance_pixels: int | None = None,
+    pixel_size_native_units: int | float | None = None,
+    max_distance_native_units: int | float | None = None,
+):
     """
     Compute the distance to cloud on a binary ``cloud_mask``. Distance is computed for all ``False`` pixels to all ``True`` pixels.
     The maximum distance returned by this function can be specified either in pixels, using ``max_distance_pixels``
@@ -43,19 +58,29 @@ def distance_to_cloud(cloud_mask: openeo.DataCube, image_size_pixels: int, *, ma
         f"Found {max_distance_pixels=}, {max_distance_native_units=}"
     )
     if max_distance_native_units is not None:
-        assert (pixel_size_native_units is not None) and (pixel_size_native_units > 0), (
+        assert (pixel_size_native_units is not None) and (
+            pixel_size_native_units > 0
+        ), (
             "pixel_size_in_native_units must be larger than 0 and specified if max_distance_in_native_units is set."
         )
         max_distance_pixels = int(max_distance_native_units / pixel_size_native_units)
 
-    dtc_in_pixels = euclidean_distance_transform(cloud_mask, image_size_pixels=image_size_pixels, border_pixels=max_distance_pixels)
-    if max_distance_native_units is not None:  # pixel_size_native_units must be specified
+    dtc_in_pixels = euclidean_distance_transform(
+        cloud_mask,
+        image_size_pixels=image_size_pixels,
+        border_pixels=max_distance_pixels,
+    )
+    if (
+        max_distance_native_units is not None
+    ):  # pixel_size_native_units must be specified
         return dtc_in_pixels * pixel_size_native_units
 
     return dtc_in_pixels
 
 
-def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, border_pixels) -> openeo.DataCube:
+def euclidean_distance_transform(
+    band: openeo.DataCube, image_size_pixels, border_pixels
+) -> openeo.DataCube:
     """
     Computes the distance (in pixels) to the closest background pixel value of ``False``.
     The distance is computed with a border of ``border_pixels`` pixels around the region of interest
@@ -65,7 +90,9 @@ def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, borde
     from a pixel of interest (``False``) situated on one edge of the border to the edge of the image (without border)
     on the opposite side.
     """
-    udf = openeo.UDF.from_file(UDF_DISTANCE_TRANSFORM_PATH, runtime="Python")#, version="3")
+    udf = openeo.UDF.from_file(
+        UDF_DISTANCE_TRANSFORM_PATH, runtime="Python"
+    )  # , version="3")
     dt = band.apply_neighborhood(
         udf,
         size=[
@@ -81,7 +108,9 @@ def euclidean_distance_transform(band: openeo.DataCube, image_size_pixels, borde
     return dt
 
 
-def compute_distance_score(distance_to_cloud: openeo.DataCube, max_distance) -> openeo.DataCube:
+def compute_distance_score(
+    distance_to_cloud: openeo.DataCube, max_distance
+) -> openeo.DataCube:
     rescaled = (distance_to_cloud - 1) / max_distance
 
     score = rescaled.apply(lambda x: x.clip(min=0, max=1))

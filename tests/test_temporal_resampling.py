@@ -2,7 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from efast_openeo.algorithms.temporal_interpolation import interpolate_time_series_to_target_labels
+from efast_openeo.algorithms.temporal_interpolation import (
+    interpolate_time_series_to_target_extent,
+)
+
 
 # Fixtures
 @pytest.fixture
@@ -26,5 +29,5 @@ def test_merge_cubes(s3_cube, s2_time_series, persistent_output_dir, run_openeo)
     should emulate the original S3 cube exactly.
     """
 
-    s3_at_s2_time = interpolate_time_series_to_target_labels(s3_cube, s2_time_series)
-    run_openeo(s3_at_s2_time, persistent_output_dir / "s3_at_s2_time" )
+    s3_at_s2_time = interpolate_time_series_to_target_extent(s3_cube, s2_time_series)
+    run_openeo(s3_at_s2_time, persistent_output_dir / "s3_at_s2_time")

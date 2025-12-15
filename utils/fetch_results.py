@@ -11,7 +11,9 @@ def main():
     parser.add_argument("output_dir")
     args = parser.parse_args()
 
-    connection = openeo.connect("https://openeo.dataspace.copernicus.eu/").authenticate_oidc()
+    connection = openeo.connect(
+        "https://openeo.dataspace.copernicus.eu/"
+    ).authenticate_oidc()
 
     out_path = pathlib.Path(args.output_dir)
     out_path.mkdir(exist_ok=True, parents=True)
