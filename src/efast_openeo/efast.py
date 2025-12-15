@@ -2,20 +2,35 @@ from pathlib import Path
 from typing import List
 
 from efast_openeo.algorithms.fusion import fusion
-from efast_openeo.algorithms.temporal_interpolation import interpolate_time_series_to_target_labels
+from efast_openeo.algorithms.temporal_interpolation import (
+    interpolate_time_series_to_target_extent,
+    interpolate_time_series_to_target_labels,
+)
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
 from efast_openeo.smoothing import smoothing_kernel
 from efast_openeo.util.log import logger
 from efast_openeo import constants
 from efast_openeo.data_loading import load_and_scale
-from efast_openeo.algorithms.distance_to_cloud import distance_to_cloud, compute_cloud_mask_s3, compute_cloud_mask_s2, \
-    compute_distance_score
+from efast_openeo.algorithms.distance_to_cloud import (
+    distance_to_cloud,
+    compute_cloud_mask_s3,
+    compute_cloud_mask_s2,
+    compute_distance_score,
+)
 
 import openeo
 
 
-def save_intermediate(cube, name: str, out_dir: str | Path, file_format: str, synchronous: bool, *, to_skip: list | set | None = None,
-                      skip_all=False):
+def save_intermediate(
+    cube,
+    name: str,
+    out_dir: str | Path,
+    file_format: str,
+    synchronous: bool,
+    *,
+    to_skip: list | set | None = None,
+    skip_all=False,
+):
     """
     Save an intermediate result, either by using ``download``, if execution is synchronous or via adding a ``save_result``
     node in the process graph.
@@ -54,22 +69,24 @@ def save_intermediate(cube, name: str, out_dir: str | Path, file_format: str, sy
     return cube
 
 
-def efast_openeo(connection: openeo.Connection,
-                 max_distance_to_cloud_m: int,
-                 temporal_extent: List[str],
-                 t_s3_composites: List[str],
-                 t_target: List[str],
-                 bbox: dict[str, float],
-                 s3_data_bands: List[str],
-                 s2_data_bands: List[str],
-                 fused_band_names: List[str],
-                 output_dir: str | Path,
-                 save_intermediates: bool,
-                 synchronous: bool,
-                 skip_intermediates: List[str],
-                 file_format: str,
-                 cloud_tolerance_percentage: float
-                 ) -> openeo.DataCube:
+def efast_openeo(
+    connection: openeo.Connection,
+    *,
+    max_distance_to_cloud_m: int,
+    temporal_extent: List[str],
+    bbox: dict[str, float],
+    s3_data_bands: List[str],
+    s2_data_bands: List[str],
+    fused_band_names: List[str],
+    output_dir: str | Path,
+    save_intermediates: bool,
+    synchronous: bool,
+    skip_intermediates: List[str],
+    file_format: str,
+    cloud_tolerance_percentage: float,
+    temporal_extent_target: List[str] | None,
+    interval_days: int,
+) -> openeo.DataCube:
     """
     Main logic for the EFAST [1] Sentinel-2 / Sentinel-3 Fusion implemented as an OpenEO process graph.
     The algorithm proceeds with the following broad steps:
@@ -94,9 +111,7 @@ def efast_openeo(connection: openeo.Connection,
          :param connection: Authenticated connection to an openeo backend
          :param max_distance_to_cloud_m: Maximum distance to cloud to be considered in the distance score
          :param temporal_extent: temporal extent of all input cubes
-         :param t_s3_composites: time series on which to create the Sentinel-3 composites (before interpolation).
             Should be passed as a list of strings, e.g ["2022-01-01", "2022-01-03", "2022-01-05"]
-         :param t_target: time series on which to generate the fused results
          :param bbox: bounding box of the area of interest. Dictionary with keys "west", "south", "east", "north",
             and optionally "crs".
          :param s3_data_bands: Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection).
@@ -111,7 +126,15 @@ def efast_openeo(connection: openeo.Connection,
          :param file_format: File format for intermediate results
          :param cloud_tolerance_percentage: Percentage of a Sentinel-3 pixel to be covered by cloud
             (using the S2 cloud mask) from which the S3 pixel will be considered cloudy.
-        :returns: Datacube with ``t_target`` time series, ``fused_band_names`` bands on S2 resolution.
+        :param temporal_extent_target: temporal extent of the output time series. Setting `temporal_extent`
+            to a shorter interval, contained in ``temporal_extent``, allows all outputs to have a larger context of
+            preceding and following observations. If ``None``, fusion results will be generated for the entire
+             ``temporal_extent``. Should be entirely contained in ``temporal_extent``.
+        :param interval_days: Interval at which to generate fused composites. This parameter also determines the
+            interval of Sentinel-3 composites used in the computation.
+
+        :returns: Datacube with time series defined by the borders [incl, excl) ``termporal_extent_composites`` and step
+         ``interval_days``, ``fused_band_names`` bands on S2 resolution.
     """
     skip_all_intermediates = not save_intermediates
     max_distance_to_cloud_s3_px = max_distance_to_cloud_m / constants.S3_RESOLUTION_M
@@ -122,7 +145,7 @@ def efast_openeo(connection: openeo.Connection,
         constants.S3_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
-        bands=[constants.S3_FLAG_BAND]
+        bands=[constants.S3_FLAG_BAND],
     ).band(constants.S3_FLAG_BAND)
     s3_bands = load_and_scale(
         connection=connection,
@@ -146,122 +169,271 @@ def efast_openeo(connection: openeo.Connection,
         bands=s2_data_bands,
     )
     # TODO collect intermediates in a dict and run save_intermediates at the end (also, avoid repeating the parameters)
-    s2_bands = save_intermediate(s2_bands, "s2_bands", out_dir=output_dir, file_format=file_format,
-                                 synchronous=synchronous, to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s2_bands = save_intermediate(
+        s2_bands,
+        "s2_bands",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     # s3 composites
     overlap_factor = 10
-    s3_dtc_overlap_length_px = int(max_distance_to_cloud_m * overlap_factor) // constants.S3_RESOLUTION_M
+    s3_dtc_overlap_length_px = (
+        int(max_distance_to_cloud_m * overlap_factor) // constants.S3_RESOLUTION_M
+    )
     s3_dtc_patch_length_px = s3_dtc_overlap_length_px * 2
 
     logger.info(f"Setting {s3_dtc_patch_length_px=} and {s3_dtc_overlap_length_px=}")
 
     s3_cloud_mask = compute_cloud_mask_s3(s3_flags)
-    s3_cloud_mask = save_intermediate(s3_cloud_mask, "s3_cloud_mask", out_dir=output_dir, file_format=file_format,
-                                      synchronous=synchronous, to_skip=skip_intermediates,
-                                      skip_all=skip_all_intermediates)
+    s3_cloud_mask = save_intermediate(
+        s3_cloud_mask,
+        "s3_cloud_mask",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
-    s3_distance_to_cloud = distance_to_cloud(s3_cloud_mask, image_size_pixels=s3_dtc_patch_length_px,
-                                             max_distance_pixels=s3_dtc_overlap_length_px,
-                                             pixel_size_native_units=constants.S3_RESOLUTION_DEG)
-    s3_distance_to_cloud = save_intermediate(s3_distance_to_cloud, "s3_distance_to_cloud", out_dir=output_dir,
-                                             file_format=file_format, synchronous=synchronous,
-                                             to_skip=skip_intermediates, skip_all=skip_all_intermediates)
-    s3_distance_score = compute_distance_score(s3_distance_to_cloud, max_distance_to_cloud_s3_px)
-    s3_distance_score = save_intermediate(s3_distance_score, "s3_distance_score", out_dir=output_dir,
-                                          file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
-                                          skip_all=skip_all_intermediates)
+    s3_distance_to_cloud = distance_to_cloud(
+        s3_cloud_mask,
+        image_size_pixels=s3_dtc_patch_length_px,
+        max_distance_pixels=s3_dtc_overlap_length_px,
+        pixel_size_native_units=constants.S3_RESOLUTION_DEG,
+    )
+    s3_distance_to_cloud = save_intermediate(
+        s3_distance_to_cloud,
+        "s3_distance_to_cloud",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
+    s3_distance_score = compute_distance_score(
+        s3_distance_to_cloud, max_distance_to_cloud_s3_px
+    )
+    s3_distance_score = save_intermediate(
+        s3_distance_score,
+        "s3_distance_score",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     s3_bands_and_distance_score = s3_bands.merge_cubes(s3_distance_score)
-    s3_bands_and_distance_score = save_intermediate(s3_bands_and_distance_score, "s3_bands_and_distance_score",
-                                                    out_dir=output_dir, file_format=file_format,
-                                                    synchronous=synchronous, to_skip=skip_intermediates,
-                                                    skip_all=skip_all_intermediates)
-    s3_composite = compute_weighted_composite(s3_bands_and_distance_score, t_s3_composites,
-                                              sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV)
+    s3_bands_and_distance_score = save_intermediate(
+        s3_bands_and_distance_score,
+        "s3_bands_and_distance_score",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
+    s3_composite = compute_weighted_composite(
+        s3_bands_and_distance_score,
+        temporal_extent=temporal_extent,
+        interval_days=interval_days,
+        sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV,
+    )
     s3_composite_data_bands = s3_composite.filter_bands(s3_data_bands)
-    s3_composite_data_bands = save_intermediate(s3_composite_data_bands, "s3_composite_data_bands", out_dir=output_dir,
-                                                file_format=file_format, synchronous=synchronous,
-                                                to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s3_composite_data_bands = save_intermediate(
+        s3_composite_data_bands,
+        "s3_composite_data_bands",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
-    s3_composite_data_bands_smoothed = s3_composite_data_bands.apply_kernel(kernel=smoothing_kernel())
-    s3_composite_data_bands_smoothed = save_intermediate(s3_composite_data_bands_smoothed,
-                                                         "s3_composite_data_bands_smoothed", out_dir=output_dir,
-                                                         file_format=file_format, synchronous=synchronous,
-                                                         to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s3_composite_data_bands_smoothed = s3_composite_data_bands.apply_kernel(
+        kernel=smoothing_kernel()
+    )
+    s3_composite_data_bands_smoothed = save_intermediate(
+        s3_composite_data_bands_smoothed,
+        "s3_composite_data_bands_smoothed",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     # s2 pre processing
     # do not use output for next step, the conversion to int is only a workaround of a backend bug for downloads
-    save_intermediate(s2_flags * 1, "s2_cloud_flags", out_dir=output_dir, file_format=file_format,
-                                      synchronous=synchronous, to_skip=skip_intermediates,
-                                      skip_all=skip_all_intermediates)
-    s2_cloud_mask = compute_cloud_mask_s2(s2_flags) * 1.0 # convert to float for inspection and mean computation
-    s2_cloud_mask = save_intermediate(s2_cloud_mask, "s2_cloud_mask", out_dir=output_dir, file_format=file_format,
-                                      synchronous=synchronous, to_skip=skip_intermediates,
-                                      skip_all=skip_all_intermediates)
-    s2_cloud_mask_mean = s2_cloud_mask.resample_spatial(resolution=300, method="average")
-    s2_cloud_mask_mean = save_intermediate(s2_cloud_mask_mean, "s2_cloud_mask_mean", out_dir=output_dir,
-                                           file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
-                                           skip_all=skip_all_intermediates)
+    save_intermediate(
+        s2_flags * 1,
+        "s2_cloud_flags",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
+    s2_cloud_mask = (
+        compute_cloud_mask_s2(s2_flags) * 1.0
+    )  # convert to float for inspection and mean computation
+    s2_cloud_mask = save_intermediate(
+        s2_cloud_mask,
+        "s2_cloud_mask",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
+    s2_cloud_mask_mean = s2_cloud_mask.resample_spatial(
+        resolution=300, method="average"
+    )
+    s2_cloud_mask_mean = save_intermediate(
+        s2_cloud_mask_mean,
+        "s2_cloud_mask_mean",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
     s2_cloud_mask_coarse = s2_cloud_mask_mean >= cloud_tolerance_percentage
-    s2_cloud_mask_coarse = save_intermediate(s2_cloud_mask_coarse, "s2_cloud_mask_coarse", out_dir=output_dir,
-                                             file_format=file_format, synchronous=synchronous,
-                                             to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s2_cloud_mask_coarse = save_intermediate(
+        s2_cloud_mask_coarse,
+        "s2_cloud_mask_coarse",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
-    s2_distance_to_cloud = distance_to_cloud(s2_cloud_mask_coarse, image_size_pixels=s3_dtc_patch_length_px,
-                                             max_distance_pixels=s3_dtc_overlap_length_px,
-                                             pixel_size_native_units=constants.S3_RESOLUTION_DEG)
-    s2_distance_to_cloud = save_intermediate(s2_distance_to_cloud, "s2_distance_to_cloud", out_dir=output_dir,
-                                             file_format=file_format, synchronous=synchronous,
-                                             to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s2_distance_to_cloud = distance_to_cloud(
+        s2_cloud_mask_coarse,
+        image_size_pixels=s3_dtc_patch_length_px,
+        max_distance_pixels=s3_dtc_overlap_length_px,
+        pixel_size_native_units=constants.S3_RESOLUTION_DEG,
+    )
+    s2_distance_to_cloud = save_intermediate(
+        s2_distance_to_cloud,
+        "s2_distance_to_cloud",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
-    s2_distance_score = compute_distance_score(s2_distance_to_cloud, max_distance_to_cloud_s3_px)
-    s2_distance_score = save_intermediate(s2_distance_score, "s2_distance_score", out_dir=output_dir,
-                                          file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
-                                          skip_all=skip_all_intermediates)
+    s2_distance_score = compute_distance_score(
+        s2_distance_to_cloud, max_distance_to_cloud_s3_px
+    )
+    s2_distance_score = save_intermediate(
+        s2_distance_score,
+        "s2_distance_score",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     s2_bands_masked = s2_bands.mask(s2_cloud_mask)
-    s2_bands_masked = save_intermediate(s2_bands_masked, "s2_bands_masked", out_dir=output_dir, file_format=file_format,
-                                        synchronous=synchronous, to_skip=skip_intermediates,
-                                        skip_all=skip_all_intermediates)
+    s2_bands_masked = save_intermediate(
+        s2_bands_masked,
+        "s2_bands_masked",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     # s3 temporal resampling
-    s3_composite_target_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands_smoothed, t_target)
-    s3_composite_target_interp = save_intermediate(s3_composite_target_interp, "s3_composite_target_interp",
-                                                   out_dir=output_dir, file_format=file_format, synchronous=synchronous,
-                                                   to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s3_composite_target_interp = interpolate_time_series_to_target_extent(
+        s3_composite_data_bands_smoothed,
+        temporal_extent=temporal_extent_target,
+        interval_days=interval_days,
+    )
+    s3_composite_target_interp = save_intermediate(
+        s3_composite_target_interp,
+        "s3_composite_target_interp",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     s3_composite_target_interp_band_names = [b + "_interpolated" for b in s3_data_bands]
-    s3_composite_target_interp = s3_composite_target_interp.rename_labels("bands",
-                                                                          target=s3_composite_target_interp_band_names,
-                                                                          source=s3_data_bands)
-    s3_composite_s2_interp = interpolate_time_series_to_target_labels(s3_composite_data_bands_smoothed,
-                                                                      s2_bands.dimension_labels("t"))
-    s3_composite_s2_interp = save_intermediate(s3_composite_s2_interp, "s3_composite_s2_interp", out_dir=output_dir,
-                                               file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
-                                               skip_all=skip_all_intermediates)
+    s3_composite_target_interp = s3_composite_target_interp.rename_labels(
+        "bands", target=s3_composite_target_interp_band_names, source=s3_data_bands
+    )
+    s3_composite_s2_interp = interpolate_time_series_to_target_labels(
+        s3_composite_data_bands_smoothed, s2_bands.dimension_labels("t")
+    )
+    s3_composite_s2_interp = save_intermediate(
+        s3_composite_s2_interp,
+        "s3_composite_s2_interp",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     # s2/3 aggregate
     s2_bands_dtc_merge = s2_bands_masked.merge_cubes(s2_distance_score)
-    s2_bands_dtc_merge = save_intermediate(s2_bands_dtc_merge, "s2_bands_dtc_merge", out_dir=output_dir,
-                                           file_format=file_format, synchronous=synchronous, to_skip=skip_intermediates,
-                                           skip_all=skip_all_intermediates)
+    s2_bands_dtc_merge = save_intermediate(
+        s2_bands_dtc_merge,
+        "s2_bands_dtc_merge",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
     s2_s3_pre_aggregate_merge = s2_bands_dtc_merge.merge_cubes(s3_composite_s2_interp)
-    s2_s3_pre_aggregate_merge = save_intermediate(s2_s3_pre_aggregate_merge, "s2_s3_pre_aggregate_merge",
-                                                  out_dir=output_dir, file_format=file_format, synchronous=synchronous,
-                                                  to_skip=skip_intermediates, skip_all=skip_all_intermediates)
+    s2_s3_pre_aggregate_merge = save_intermediate(
+        s2_s3_pre_aggregate_merge,
+        "s2_s3_pre_aggregate_merge",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
-    s2_s3_aggregate = compute_weighted_composite(s2_s3_pre_aggregate_merge, target_time_series=t_target,
-                                                 sigma_doy=constants.S2_TEMPORAL_SCORE_STDDEV)
-    s2_s3_aggregate = save_intermediate(s2_s3_aggregate, "s2_s3_aggregate", out_dir=output_dir, file_format=file_format,
-                                        synchronous=synchronous, to_skip=skip_intermediates,
-                                        skip_all=skip_all_intermediates)
+    s2_s3_aggregate = compute_weighted_composite(
+        s2_s3_pre_aggregate_merge,
+        temporal_extent=temporal_extent_target,
+        interval_days=interval_days,
+        sigma_doy=constants.S2_TEMPORAL_SCORE_STDDEV,
+    )
+    s2_s3_aggregate = save_intermediate(
+        s2_s3_aggregate,
+        "s2_s3_aggregate",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     fusion_input = s2_s3_aggregate.merge_cubes(s3_composite_target_interp)
-    fusion_input = save_intermediate(fusion_input, "fusion_input", out_dir=output_dir, file_format=file_format,
-                                     synchronous=synchronous, to_skip=skip_intermediates,
-                                     skip_all=skip_all_intermediates)
-
+    fusion_input = save_intermediate(
+        fusion_input,
+        "fusion_input",
+        out_dir=output_dir,
+        file_format=file_format,
+        synchronous=synchronous,
+        to_skip=skip_intermediates,
+        skip_all=skip_all_intermediates,
+    )
 
     # fusion
     fused = fusion(
@@ -273,4 +445,3 @@ def efast_openeo(connection: openeo.Connection,
     )
 
     return fused
-
