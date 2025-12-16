@@ -100,6 +100,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
             "The order should match the corresponding s3_data_bands and s2_data_bands parameters."
         ),
         item_schema={"type": "string"},
+        default=[],
     )
 
     # FIXME this isn't a parameter because arithmetic operations with parameters need to be handled specially.

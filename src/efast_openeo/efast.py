@@ -19,6 +19,8 @@ from efast_openeo.algorithms.distance_to_cloud import (
 )
 
 import openeo
+from openeo.api.process import Parameter
+from openeo import processes
 
 
 def save_intermediate(
@@ -77,7 +79,7 @@ def efast_openeo(
     bbox: dict[str, float],
     s3_data_bands: List[str],
     s2_data_bands: List[str],
-    fused_band_names: List[str],
+    fused_band_names: List[str] | Parameter,
     output_dir: str | Path,
     save_intermediates: bool,
     synchronous: bool,
@@ -138,6 +140,11 @@ def efast_openeo(
     """
     skip_all_intermediates = not save_intermediates
     max_distance_to_cloud_s3_px = max_distance_to_cloud_m / constants.S3_RESOLUTION_M
+
+    # use s2 bands as default output
+    fused_bands_count = processes.count(fused_band_names)
+    no_fused_band_names = fused_bands_count.eq(0)
+    fused_band_names = processes.if_(no_fused_band_names, s2_data_bands, fused_band_names)
 
     # Separate ``load_collection`` calls must be used (not filter_bands) because of a backend bug
     # TODO link corresponding forum post
