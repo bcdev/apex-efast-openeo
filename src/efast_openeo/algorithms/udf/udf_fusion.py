@@ -26,16 +26,27 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     lr_mosaic_bands = context["lr_mosaic_bands"]
     lr_interpolated_bands = context["lr_interpolated_bands"]
     target_bands = context.get("target_bands", hr_mosaic_bands)
+    output_ndvi = context.get("output_ndvi", False)
 
     fused = fuse(
         cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands
     )
+    if output_ndvi:
+        nir = cube.sel(bands="B8A")
+        red = cube.sel(bands="B04")
+        ndvi = (nir - red) / (nir + red)
+        # TODO may break on older version of xarray
+        ndvi_formatted = ndvi.expand_dims({"bands": ["ndvi"]}, axis=fused.dims.index("bands"))
+        return ndvi_formatted
 
     return fused
 
 
 def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
     target_bands = context.get("target_bands", context["hr_mosaic_bands"])
+    output_ndvi = context.get("output_ndvi", False)
+    if output_ndvi:
+        target_bands = ["ndvi"]
     metadata = metadata.rename_labels(dimension="bands", target=target_bands)
     return metadata
 

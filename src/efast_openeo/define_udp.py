@@ -40,7 +40,12 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     )
 
     interval_days = Parameter.integer(
-        name="interval_days", description=("Interval in which to generate outputs")
+        name="interval_days", description="Interval in which to generate outputs"
+    )
+
+    output_ndvi = Parameter.boolean(
+        name="output_ndvi", description="Whether to output ndvi or fused bands",
+        default=False,
     )
 
     # max_distance_to_cloud_m can't be a parameter, because it determines the overlap size in the ``apply_neighborhood``
@@ -123,6 +128,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         # s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
         s2_data_bands,
         fused_band_names,
+        output_ndvi,
         # cloud_tolerance_percentage, Unexpected error in backend when using gte process
     ]
 
@@ -163,6 +169,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         skip_intermediates=skip_intermediates,
         file_format=file_format,
         cloud_tolerance_percentage=cloud_tolerance_percentage,
+        output_ndvi=output_ndvi,
     )
 
     return params, process_graph

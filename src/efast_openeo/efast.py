@@ -88,6 +88,7 @@ def efast_openeo(
     cloud_tolerance_percentage: float,
     temporal_extent_target: List[str] | None,
     interval_days: int,
+    output_ndvi: bool,
 ) -> openeo.DataCube:
     """
     Main logic for the EFAST [1] Sentinel-2 / Sentinel-3 Fusion implemented as an OpenEO process graph.
@@ -442,13 +443,13 @@ def efast_openeo(
         skip_all=skip_all_intermediates,
     )
 
-    # fusion
     fused = fusion(
         fusion_input,
         high_resolution_mosaic_band_names=s2_data_bands,
         low_resolution_mosaic_band_names=s3_data_bands,
         low_resolution_interpolated_band_names=s3_composite_target_interp_band_names,
         target_band_names=fused_band_names,
+        output_ndvi=output_ndvi,
     )
 
     return fused

@@ -13,6 +13,7 @@ def fusion(
     high_resolution_mosaic_band_names: List[str],
     low_resolution_mosaic_band_names: List[str],
     low_resolution_interpolated_band_names,
+    output_ndvi: bool,
     target_band_names: List[str] | None = None,
 ):
     """
@@ -49,6 +50,7 @@ def fusion(
         "lr_mosaic_bands": low_resolution_mosaic_band_names,
         "hr_mosaic_bands": high_resolution_mosaic_band_names,
         "lr_interpolated_bands": low_resolution_interpolated_band_names,
+        "output_ndvi": output_ndvi,
     }
     if target_band_names is not None:
         context["target_bands"]: target_band_names

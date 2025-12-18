@@ -122,6 +122,11 @@ def parse_bands(ctx, param, value):
     type=float,
     help="Percentage of a S3 pixel covered by S2 cloud from which it is considered cloudy.",
 )
+@click.option(
+    "--output-ndvi",
+    is_flag=True,
+    help="If set, produce the normalized difference vegetation index (NDVI) as output instead of the fused bands",
+)
 def main(
     max_distance_to_cloud_m,
     t_start,
@@ -139,6 +144,7 @@ def main(
     skip_intermediates,
     file_format,
     cloud_tolerance_percentage,
+    output_ndvi,
 ):
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(exist_ok=True)
@@ -178,6 +184,7 @@ def main(
         skip_intermediates=skip_intermediates,
         file_format=file_format,
         cloud_tolerance_percentage=cloud_tolerance_percentage,
+        output_ndvi=output_ndvi,
     )
     # inputs
 
