@@ -8,8 +8,9 @@ from efast_openeo.algorithms.udf.udf_temporal_interpolation import apply_datacub
 def test_temporal_interpolation_shape():
     t_start = "2022-09-01"
     t_end = "2022-09-30"
+    interval_days=5
     t = xr.date_range(t_start, t_end, freq="1D")
-    t_target = xr.date_range(t_start, t_end, freq="5D")
+    t_target = xr.date_range(t_start, t_end, freq=f"{interval_days}D")
     n_bands = 2
     y, x = 3, 4
 
@@ -28,7 +29,13 @@ def test_temporal_interpolation_shape():
 
     cube = xr.DataArray(data, dims=["t", "bands", "y", "x"], coords={"t": t})
 
-    interpolated = apply_datacube(cube, {"t_target": t_target})
+    interpolated = apply_datacube(
+        cube,
+        dict(
+            temporal_extent_target=[t_start, t_end],
+            interval_days=interval_days,
+        )
+    )
 
     assert interpolated.ndim == 4
     assert interpolated.t.shape == (len(t_target),)
