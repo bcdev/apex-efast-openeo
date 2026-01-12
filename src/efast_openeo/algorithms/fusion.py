@@ -53,7 +53,7 @@ def fusion(
         "output_ndvi": output_ndvi,
     }
     if target_band_names is not None:
-        context["target_bands"]: target_band_names
+        context["target_bands"] = target_band_names
 
     fused = cube.apply_dimension(process=udf, dimension="bands", context=context)
     return fused
