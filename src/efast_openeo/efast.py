@@ -142,16 +142,6 @@ def efast_openeo(
     skip_all_intermediates = not save_intermediates
     max_distance_to_cloud_s3_px = max_distance_to_cloud_m / constants.S3_RESOLUTION_M
 
-    # use s2 bands as default output bands
-    fused_bands_count = processes.count(fused_band_names)
-    no_fused_band_names = fused_bands_count.eq(0)
-    fused_band_names = processes.if_(no_fused_band_names, s2_data_bands, fused_band_names)
-
-    # use input temporal extent as default target temporal extent
-    temporal_extent_target = processes.count(temporal_extent_target)
-    no_temporal_extent_target = temporal_extent_target.eq(0)
-    temporal_extent_target = processes.if_(no_temporal_extent_target, temporal_extent, temporal_extent_target)
-
     # Separate ``load_collection`` calls must be used (not filter_bands) because of a backend bug
     # TODO link corresponding forum post
     s3_flags = connection.load_collection(
@@ -253,6 +243,7 @@ def efast_openeo(
     s3_composite = compute_weighted_composite(
         s3_bands_and_distance_score,
         temporal_extent=temporal_extent,
+        temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
         sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV,
     )
@@ -369,7 +360,8 @@ def efast_openeo(
     # s3 temporal resampling
     s3_composite_target_interp = interpolate_time_series_to_target_extent(
         s3_composite_data_bands_smoothed,
-        temporal_extent=temporal_extent_target,
+        temporal_extent=temporal_extent,
+        temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
     )
     s3_composite_target_interp = save_intermediate(
@@ -423,7 +415,8 @@ def efast_openeo(
 
     s2_s3_aggregate = compute_weighted_composite(
         s2_s3_pre_aggregate_merge,
-        temporal_extent=temporal_extent_target,
+        temporal_extent=temporal_extent,
+        temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
         sigma_doy=constants.S2_TEMPORAL_SCORE_STDDEV,
     )

@@ -9,14 +9,15 @@ UDF_TEMPORAL_INTERPOLATION = importlib.resources.files(
 ).joinpath("udf_temporal_interpolation.py")
 
 
-def interpolate_time_series_to_target_extent(cube, temporal_extent, interval_days):
+def interpolate_time_series_to_target_extent(cube, *, temporal_extent, interval_days, temporal_extent_target):
     udf = openeo.UDF.from_file(
         UDF_TEMPORAL_INTERPOLATION,
         context={"from_parameter": "context"},
         runtime="Python",
     )  # , version="3")
     context = dict(
-        temporal_extent=temporal_extent,
+        temporal_extent_input=temporal_extent,
+        temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
     )
     interpolated = cube.apply_dimension(process=udf, dimension="t", context=context)

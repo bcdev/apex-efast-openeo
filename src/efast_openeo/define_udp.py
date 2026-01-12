@@ -31,14 +31,13 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         schema={"type": "object", "subtype": "geojson"},
     )
 
-    temporal_extent_target = Parameter(
+    temporal_extent_target = Parameter.temporal_interval(
         name="temporal_extent_target",
         description=(
             "The date range of the fused outputs. Should be completely contained in temporal_extent. "
             "If left empty, the temporal extent of the input (parameter temporal_extent) is used as the default. "
         ),
-        schema={"type": "array", "subtype": "temporal-interval"},
-        default=[],
+        default=None,
     )
 
     interval_days = Parameter.integer(
@@ -107,7 +106,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
             "The order should match the corresponding s3_data_bands and s2_data_bands parameters."
         ),
         item_schema={"type": "string"},
-        default=[],
+        default=None,
     )
 
     # FIXME this isn't a parameter because arithmetic operations with parameters need to be handled specially.

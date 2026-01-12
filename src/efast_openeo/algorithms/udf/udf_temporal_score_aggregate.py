@@ -27,7 +27,12 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
         f"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'"
     )
 
-    temporal_extent = context["temporal_extent"]
+    temporal_extent = context.get("temporal_extent_target")
+    if temporal_extent is None:
+        temporal_extent = context.get("temporal_extent_input")
+    if temporal_extent is None:
+        raise ValueError("either temporal_extent_input or temporal_extent_target must be provided as context")
+
     interval_days = context["interval_days"]
     sigma_doy = context["sigma_doy"]
 
