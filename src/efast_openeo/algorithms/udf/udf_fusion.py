@@ -25,7 +25,9 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     hr_mosaic_bands = context["hr_mosaic_bands"]
     lr_mosaic_bands = context["lr_mosaic_bands"]
     lr_interpolated_bands = context["lr_interpolated_bands"]
-    target_bands = context.get("target_bands", hr_mosaic_bands)
+    target_bands = context.get("target_bands")
+    if target_bands is None or len(target_bands) != len(hr_mosaic_bands):
+        target_bands = hr_mosaic_bands
     output_ndvi = context.get("output_ndvi", False)
 
     fused = fuse(
