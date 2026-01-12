@@ -34,9 +34,11 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     temporal_extent_target = Parameter(
         name="temporal_extent_target",
         description=(
-            "The date range of the fused outputs. Should be completely contained in temporal_extent"
+            "The date range of the fused outputs. Should be completely contained in temporal_extent. "
+            "If left empty, the temporal extent of the input (parameter temporal_extent) is used as the default. "
         ),
         schema={"type": "array", "subtype": "temporal-interval"},
+        default=[],
     )
 
     interval_days = Parameter.integer(

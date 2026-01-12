@@ -142,10 +142,15 @@ def efast_openeo(
     skip_all_intermediates = not save_intermediates
     max_distance_to_cloud_s3_px = max_distance_to_cloud_m / constants.S3_RESOLUTION_M
 
-    # use s2 bands as default output
+    # use s2 bands as default output bands
     fused_bands_count = processes.count(fused_band_names)
     no_fused_band_names = fused_bands_count.eq(0)
     fused_band_names = processes.if_(no_fused_band_names, s2_data_bands, fused_band_names)
+
+    # use input temporal extent as default target temporal extent
+    temporal_extent_target = processes.count(temporal_extent_target)
+    no_temporal_extent_target = temporal_extent_target.eq(0)
+    temporal_extent_target = processes.if_(no_temporal_extent_target, temporal_extent, temporal_extent_target)
 
     # Separate ``load_collection`` calls must be used (not filter_bands) because of a backend bug
     # TODO link corresponding forum post
