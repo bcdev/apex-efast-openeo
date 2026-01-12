@@ -27,16 +27,8 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
         f"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'"
     )
 
-    temporal_extent = context.get("temporal_extent_target")
-    if temporal_extent is None:
-        temporal_extent = context.get("temporal_extent_input")
-    if temporal_extent is None:
-        raise ValueError("either temporal_extent_input or temporal_extent_target must be provided as context")
-
-    interval_days = context["interval_days"]
     sigma_doy = context["sigma_doy"]
-
-    t_target = compute_t_target(temporal_extent, interval_days)
+    t_target = get_t_target_from_context(context)
     temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)
     distance_score = cube.sel(bands="distance_score")
     data_bands = cube.sel(bands=[b for b in band_names if b != "distance_score"])
@@ -51,9 +43,7 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
 
 
 def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
-    temporal_extent = context["temporal_extent"]
-    interval_days = context["interval_days"]
-    t_target = compute_t_target(temporal_extent, interval_days)
+    t_target = get_t_target_from_context(context)
     t_target_str = [d.isoformat() for d in t_target.to_pydatetime()]
 
     metadata = metadata.rename_labels(dimension="t", target=t_target_str)
@@ -211,3 +201,16 @@ def _compute_combined_score_ng(distance_score, temporal_score, bands):
         dim=xr.IndexVariable("t_target", list(composites.keys())),
     )
     return composite_da
+
+
+def get_t_target_from_context(context):
+    if isinstance(context, dict):  # from user parameters
+        temporal_extent = context.get("temporal_extent_target")
+        if temporal_extent is None: # use input temporal extent as a fallback if temporal extent target is not set
+            temporal_extent = context["temporal_extent_input"]
+        interval_days = context["interval_days"]
+        t_target = compute_t_target(temporal_extent, interval_days)
+    else:
+        t_target = context
+
+    return t_target
