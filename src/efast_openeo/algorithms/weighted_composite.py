@@ -14,7 +14,7 @@ def compute_weighted_composite(
     temporal_extent: List[str] | Parameter | None,
     temporal_extent_target: List[str] | Parameter | None,
     interval_days: int,
-    sigma_doy: float = None,
+    sigma_doy: float,
 ):
     """
     Computes a score weighted by the distance to the target date from the distance to cloud score.
