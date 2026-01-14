@@ -37,7 +37,8 @@ def test_compute_composite(
 ):
     D = 20 * 20
     t_start, t_end = time_frame
-    t_target = xr.date_range(t_start, t_end, freq="2D").strftime("%Y-%m-%d").to_list()
+    interval_days = 2
+    sigma_doy=10.0
     scl = s3_cube.band(CLOUD_BAND_S3)
     dtc = distance_to_cloud(
         compute_cloud_mask_s3(scl),
@@ -50,12 +51,20 @@ def test_compute_composite(
     data_bands = s3_cube.filter_bands(data_band_names)
     data_bands_with_distance_score = data_bands.merge_cubes(distance_score)
 
-    composite = compute_weighted_composite(data_bands_with_distance_score, t_target)
+    composite = compute_weighted_composite(
+        data_bands_with_distance_score,
+        temporal_extent=[t_start, t_end],
+        temporal_extent_target=[t_start, t_end],
+        interval_days=interval_days,
+        sigma_doy=sigma_doy,
+    )
     execute(composite)(
         (persistent_output_dir / "s3_composite").with_suffix(file_extension)
     )
 
 
+@pytest.mark.openeo
+@pytest.mark.manual
 def test_download_input(s3_cube, persistent_output_dir):
     s3_cube.download(persistent_output_dir / "input.nc")
 
