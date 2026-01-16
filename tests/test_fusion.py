@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-import xarray as xr
 
 from efast_openeo.algorithms.distance_to_cloud import (
     distance_to_cloud,
@@ -26,24 +25,32 @@ def persistent_output_dir(persistent_output_dir_base) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
 
+@pytest.fixture
+def sigma_doy():
+    return 20
 
 @pytest.fixture
-def t_target(time_frame):
-    t_start, t_end = time_frame
-    t_target = xr.date_range(t_start, t_end, freq="3D").strftime("%Y-%m-%d").to_list()
-    return t_target
+def interval_days():
+    return 3
+
+@pytest.fixture
+def time_frame_target(time_frame):
+    return time_frame
 
 
 @pytest.fixture
-def s3_at_target_times(t_target, s3_cube, s2_band_cube, s2_bands, s3_bands):
+def s3_at_target_times(time_frame, time_frame_target, interval_days, s3_cube, s2_band_cube, s2_bands, s3_bands):
     s3_at_target_time = interpolate_time_series_to_target_extent(
-        s3_cube, target_time_series=t_target
+        s3_cube,
+        temporal_extent=time_frame,
+        temporal_extent_target=time_frame_target,
+        interval_days=interval_days,
     )
     return s3_at_target_time
 
 
 @pytest.fixture
-def s3_at_s2_times(connection, aoi_bounding_box, time_frame, s3_bands, s2_time_series):
+def s3_at_s2_times(connection, aoi_bounding_box, time_frame, time_frame_target, interval_days, s3_bands, s2_time_series):
     s3_cube_at_s3_time = connection.load_collection(
         S3_COLLECTION,
         spatial_extent=aoi_bounding_box,
@@ -52,7 +59,10 @@ def s3_at_s2_times(connection, aoi_bounding_box, time_frame, s3_bands, s2_time_s
     )
 
     s3_at_s2_time = interpolate_time_series_to_target_extent(
-        s3_cube_at_s3_time, target_time_series=s2_time_series
+        s3_cube_at_s3_time,
+        temporal_extent=time_frame,
+        temporal_extent_target=time_frame_target,
+        interval_days=interval_days,
     )
     return s3_at_s2_time
 
@@ -85,7 +95,7 @@ def test_s3_at_s2_times_mock(s3_at_s2_times_mock, persistent_output_dir, run_ope
 @pytest.fixture
 def s2_dtc_cube(s2_scl_cube, image_size_pixels, overlap_size_pixels, dtc_max_distance):
     s2_dtc = distance_to_cloud(
-        compute_cloud_mask_s2(s2_scl_cube),
+        compute_cloud_mask_s2(s2_scl_cube.band("SCL")),
         image_size_pixels,
         max_distance_pixels=overlap_size_pixels,
         pixel_size_native_units=20,
@@ -154,13 +164,23 @@ def test_merge_cubes(
 @pytest.mark.openeo
 @pytest.mark.manual
 def test_combined_aggregation(
-    time_frame, pre_aggregate_merge, persistent_output_dir, run_openeo
+    time_frame,
+    time_frame_target,
+    interval_days,
+    sigma_doy,
+    pre_aggregate_merge,
+    persistent_output_dir,
+    run_openeo
 ):
     merged = pre_aggregate_merge
-    t_start, t_end = time_frame
-    t_target = xr.date_range(t_start, t_end, freq="2D").strftime("%Y-%m-%d").to_list()
 
-    s2_s3_aggregate = compute_weighted_composite(merged, target_time_series=t_target)
+    s2_s3_aggregate = compute_weighted_composite(
+        merged,
+        temporal_extent=time_frame,
+        temporal_extent_target=time_frame_target,
+        interval_days=interval_days,
+        sigma_doy=sigma_doy,
+    )
 
     run_openeo(s2_s3_aggregate, persistent_output_dir / "s2_s3_aggregate")
 
@@ -178,7 +198,10 @@ def test_get_dtc_cube(s2_dtc_cube, persistent_output_dir, run_openeo):
 
 
 def test_fusion(
-    t_target,
+    time_frame,
+    time_frame_target,
+    interval_days,
+    sigma_doy,
     s2_bands,
     s3_bands,
     s3_at_target_times,
@@ -191,7 +214,13 @@ def test_fusion(
     selected_s3_bands = [band for band in s3_bands if band != MASK_BAND_S3]
     selected_s2_bands = [band for band in s2_bands if band != MASK_BAND_S2]
 
-    s2_s3_aggregate = compute_weighted_composite(merged, target_time_series=t_target)
+    s2_s3_aggregate = compute_weighted_composite(
+        merged,
+        temporal_extent=time_frame,
+        temporal_extent_target=time_frame_target,
+        interval_days=interval_days,
+        sigma_doy=sigma_doy,
+    )
     merged.dimension_labels("bands").download(
         persistent_output_dir / "merged_bands.json"
     )
