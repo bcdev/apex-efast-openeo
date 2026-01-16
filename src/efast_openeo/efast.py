@@ -80,7 +80,7 @@ def efast_openeo(
     bbox: dict[str, float],
     s3_data_bands: List[str],
     s2_data_bands: List[str],
-    fused_band_names: List[str] | Parameter,
+    fused_band_names: List[str] | Parameter | None,
     output_dir: str | Path,
     save_intermediates: bool,
     synchronous: bool,

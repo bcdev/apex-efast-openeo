@@ -20,7 +20,8 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         name="temporal_extent",
         description=(
             "The date range of the Sentinel-2 L2A and Sentinel-3 SY_2_SYN inputs. "
-            " The fused (output) time series is passed as a different parameter"
+            "The fused (output) time series can optionally be defined by the temporal_extent_target parameter. "
+            "If temporal_extent_target is not set, the output time series will cover temporal_extent by default"
         ),
         schema={"type": "array", "subtype": "temporal-interval"},
     )
@@ -34,18 +35,34 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     temporal_extent_target = Parameter.temporal_interval(
         name="temporal_extent_target",
         description=(
-            "The date range of the fused outputs. Should be completely contained in temporal_extent. "
-            "If left empty, the temporal extent of the input (parameter temporal_extent) is used as the default. "
+            "The date range of the fused outputs. Must be completely contained in temporal_extent. "
+            "This parameter is optional, if no temporal_extent_target is not set, the output will cover the "
+            "temporal extent of the inputs (defined by the parameter temporal_extent). "
+            "As per openeo convention, the start date of the temporal extent is included and the end date excluded if "
+            "if no time of day is set."
         ),
         default=None,
     )
 
     interval_days = Parameter.integer(
-        name="interval_days", description="Interval in which to generate outputs"
+        name="interval_days",
+        description=(
+            "Interval (in days) of the time series of the output. "
+            "If, for example, temporal_extent_target is set to [2022-01-01, 2022-01-10] and interval_days is set to 3, "
+            "the time series of the output will consist of images for [2022-01-01, 2022-01-04, 2022-01-07]. "
+            "2022-01-10 is excluded, as the temporal extent is defined including the start date and excluding "
+            "the end date."
+        )
     )
 
     output_ndvi = Parameter.boolean(
-        name="output_ndvi", description="Whether to output ndvi or fused bands",
+        name="output_ndvi",
+        description=(
+            "If set to True, the output includes a single NDVI band. Otherwise, "
+            "the output includes the bands of the Sentinel-2 input (defined by parameter s2_data_bands). "
+            "If set to True, the bands B04 and B8A must be included in s2_data_bands, and the bands "
+            "Syn_Oa08_reflectance and Syn_Oa17_reflectance must be included in s3_data_bands."
+        ),
         default=False,
     )
 
@@ -70,15 +87,14 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     #    default=10,
     # )
 
-    # FIXME This parameter can't be used (yet) because the call to ``rename_bands`` fails which is used
-    # to distinguish the bands from interpolated and composite S3 cubes that are combined in the final fusion step.
-    # There may be solutions or workarounds. The main issue is to have separate names for both types of bands
-    # for any number of input bands.
     s3_data_bands = Parameter.array(
         name="s3_data_bands",
         description=(
-            "Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection) used in the fusion procedure. "
-            "The order should match the corresponding s2_data_bands and fused_band_names parameters."
+            "Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection) used in the fusion "
+            "procedure. The order of s3_data_bands must match the order of s2_data_bands, so that bands with closely "
+            "matching center wavelengths are fused. "
+            "If the NDVI should be computed (parameter output_ndvi is set to True), s3_data_bands must be set to "
+            "[Syn_Oa08_reflectance, Syn_Oa17_reflectance]."
         ),
         item_schema={"type": "string"},
         default=[
@@ -94,19 +110,11 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         description=(
             "Sentinel-2 L2A bands (names follow the SENTINEL2_L2A collection) used in the fusion procedure. "
             "The order should match the corresponding s3_data_bands and fused_band_names parameters."
+            "If the NDVI should be computed (parameter output_ndvi is set to True), s2_data_bands must be set to "
+            "[B04, B8A]."
         ),
         item_schema={"type": "string"},
         default=["B02", "B03", "B04", "B8A"],
-    )
-
-    fused_band_names = Parameter.array(
-        name="fused_band_names",
-        description=(
-            "Names to assign to the output bands (corresponding to the S2 data bands). "
-            "The order should match the corresponding s3_data_bands and s2_data_bands parameters."
-        ),
-        item_schema={"type": "string"},
-        default=None,
     )
 
     # FIXME this isn't a parameter because arithmetic operations with parameters need to be handled specially.
@@ -126,17 +134,15 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         spatial_extent,
         # max_distance_to_cloud_m, # parameter can't define overlap of apply_neighborhood
         # temporal_score_stddev,
-        s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
         s2_data_bands,
-        fused_band_names,
+        s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
         output_ndvi,
         # cloud_tolerance_percentage, Unexpected error in backend when using gte process
     ]
 
     # hard coded parameters
 
-    # s2_data_bands = ["B02", "B03", "B04", "B8A"]
-    # fused_band_names = ["B02_fused", "B03_fused", "B04_fused", "B8A_fused"]
+    fused_band_names = None
     cloud_tolerance_percentage = 0.05
     max_distance_to_cloud_m = 5000
 
