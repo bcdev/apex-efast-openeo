@@ -24,6 +24,14 @@ def apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:
 
     t_target = get_t_target_from_context(context)
 
+    # The Wizard passes the temporal extent as a xr.IndexVariable which cannot be understood by xr.interp
+    if isinstance(t_target, xr.IndexVariable) or isinstance(t_target, xr.DataArray):
+        t_target = t_target.values
+    t_target = pd.to_datetime(t_target)
+
+    if getattr(t_target, "tz", None) is not None:
+        t_target = t_target.tz_localize(None)
+
     interpolated = cube.interp(t=t_target)
     dims = ("t", "bands", "y", "x")
     return interpolated.transpose(*dims)
