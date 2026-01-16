@@ -792,9 +792,6 @@
                     "lr_interpolated_band_name_suffix": "_interpolated",
                     "output_ndvi": {
                         "from_parameter": "output_ndvi"
-                    },
-                    "target_bands": {
-                        "from_parameter": "fused_band_names"
                     }
                 },
                 "data": {
@@ -824,12 +821,12 @@
         }
     },
     "id": "efast",
-    "summary": "efast",
-    "description": "efast",
+    "summary": "The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) is a method to create time-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution source (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).",
+    "description": "The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) [1] is a method to create\n            time-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution\n            source (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).\n            In comparison to other methods, EFAST aims to achieve results outperforming single-source interpolation\n            without paying the computational cost of other methods leveraging spatial context.\n            EFAST is focused on accurately capturing seasonal vegetation changes in homogeneous areas like range lands.\n            DHI-GRAS has published a Python implementation of the algorithm [2]. In the context of the ESA funded APEx\n            initiative [3], the algorithm has been ported to OpenEO and is implemented in this process graph.\n            \n            EFAST interpolates Sentinel-2 acquisitions, using a time (temporal distance to target time) and\n            distance-to-cloud weighted compositing scheme. The Sentinel-3 time-series is incorporated to locally update\n            the interpolated Sentinel-2 imagery to accurately track vegetation changes between cloud-free Sentinel-2\n            acquisitions. The method is described in detail in [1].\n            \n            EFAST produces high temporal frequency time-series matching the Sentinel-2 L2A bands which have\n            corresponding Sentinel-3 OLCI bands with matching centre frequencies. Because the application of EFAST is\n            focused on NDVI time-series, the UDP includes a parameter (output_ndvi) to directly compute the NDVI\n            for a given temporal and spatial extent.\n            \n            It should be noted that OpenEO provides bands from the SENTINEL_L2A collection in integer format. EFAST\n            converts the data to floating point values for interpolation. Therefore, output bands of EFAST have a\n            different data type (floating point) than the corresponding SENTINEL_L2A bands.\n            \n             \n            [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 1833.\n            [2]: https://github.com/DHI-GRAS/efast\n            [3]: https://apex.esa.int/\n            [4]: https://github.com/bcdev/efast-process-graph/\n            ",
     "parameters": [
         {
             "name": "temporal_extent",
-            "description": "The date range of the Sentinel-2 L2A and Sentinel-3 SY_2_SYN inputs.  The fused (output) time series is passed as a different parameter",
+            "description": "The date range of the Sentinel-2 L2A and Sentinel-3 SY_2_SYN inputs. The fused (output) time series can optionally be defined by the temporal_extent_target parameter. If temporal_extent_target is not set, the output time series will cover temporal_extent by default",
             "schema": {
                 "type": "array",
                 "subtype": "temporal-interval"
@@ -837,7 +834,7 @@
         },
         {
             "name": "temporal_extent_target",
-            "description": "The date range of the fused outputs. Should be completely contained in temporal_extent. If left empty, the temporal extent of the input (parameter temporal_extent) is used as the default. ",
+            "description": "The date range of the fused outputs. Must be completely contained in temporal_extent. This parameter is optional, if no temporal_extent_target is not set, the output will cover the temporal extent of the inputs (defined by the parameter temporal_extent). As per openeo convention, the start date of the temporal extent is included and the end date excluded if if no time of day is set.",
             "schema": {
                 "type": "array",
                 "subtype": "temporal-interval",
@@ -867,7 +864,7 @@
         },
         {
             "name": "interval_days",
-            "description": "Interval in which to generate outputs",
+            "description": "Interval (in days) of the time series of the output. If, for example, temporal_extent_target is set to [2022-01-01, 2022-01-10] and interval_days is set to 3, the time series of the output will consist of images for [2022-01-01, 2022-01-04, 2022-01-07]. 2022-01-10 is excluded, as the temporal extent is defined including the start date and excluding the end date.",
             "schema": {
                 "type": "integer"
             }
@@ -881,25 +878,8 @@
             }
         },
         {
-            "name": "s3_data_bands",
-            "description": "Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection) used in the fusion procedure. The order should match the corresponding s2_data_bands and fused_band_names parameters.",
-            "schema": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                }
-            },
-            "default": [
-                "Syn_Oa04_reflectance",
-                "Syn_Oa06_reflectance",
-                "Syn_Oa08_reflectance",
-                "Syn_Oa17_reflectance"
-            ],
-            "optional": true
-        },
-        {
             "name": "s2_data_bands",
-            "description": "Sentinel-2 L2A bands (names follow the SENTINEL2_L2A collection) used in the fusion procedure. The order should match the corresponding s3_data_bands and fused_band_names parameters.",
+            "description": "Sentinel-2 L2A bands (names follow the SENTINEL2_L2A collection) used in the fusion procedure. The order should match the corresponding s3_data_bands and fused_band_names parameters.If the NDVI should be computed (parameter output_ndvi is set to True), s2_data_bands must be set to [B04, B8A].",
             "schema": {
                 "type": "array",
                 "items": {
@@ -915,20 +895,25 @@
             "optional": true
         },
         {
-            "name": "fused_band_names",
-            "description": "Names to assign to the output bands (corresponding to the S2 data bands). The order should match the corresponding s3_data_bands and s2_data_bands parameters.",
+            "name": "s3_data_bands",
+            "description": "Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection) used in the fusion procedure. The order of s3_data_bands must match the order of s2_data_bands, so that bands with closely matching center wavelengths are fused. If the NDVI should be computed (parameter output_ndvi is set to True), s3_data_bands must be set to [Syn_Oa08_reflectance, Syn_Oa17_reflectance].",
             "schema": {
                 "type": "array",
                 "items": {
                     "type": "string"
                 }
             },
-            "default": null,
+            "default": [
+                "Syn_Oa04_reflectance",
+                "Syn_Oa06_reflectance",
+                "Syn_Oa08_reflectance",
+                "Syn_Oa17_reflectance"
+            ],
             "optional": true
         },
         {
             "name": "output_ndvi",
-            "description": "Whether to output ndvi or fused bands",
+            "description": "If set to True, the output includes a single NDVI band. Otherwise, the output includes the bands of the Sentinel-2 input (defined by parameter s2_data_bands). If set to True, the bands B04 and B8A must be included in s2_data_bands, and the bands Syn_Oa08_reflectance and Syn_Oa17_reflectance must be included in s3_data_bands.",
             "schema": {
                 "type": "boolean"
             },
