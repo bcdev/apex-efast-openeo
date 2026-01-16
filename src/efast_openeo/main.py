@@ -54,14 +54,14 @@ def parse_bands(ctx, param, value):
 )
 @click.option(
     "--t-target-start",
-    required=True,
+    required=False,
     type=str,
     help=("Start of the time frame of the fused output (inclusive)"),
 )
 @click.option(
     "--t-target-end-excl",
     type=str,
-    required=True,
+    required=False,
     help=("End of the time frame of the fused output (exclusive)"),
 )
 @click.option(
@@ -168,11 +168,16 @@ def main(
     logger.info(f"Max distance to cloud: '{max_distance_to_cloud_m} m'")
     logger.info(f"Max distance to cloud: '{max_distance_to_cloud_s3_px:.2f} pixels'")
 
+    if not t_target_start or t_target_end_excl:
+        temporal_extent_target=[]
+    else:
+        temporal_extent_target=[t_target_start, t_target_end_excl]
+
     fused = efast_openeo(
         connection=connection,
         max_distance_to_cloud_m=max_distance_to_cloud_m,
         temporal_extent=[t_start, t_end_excl],
-        temporal_extent_target=[t_target_start, t_target_end_excl],
+        temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
         bbox=bbox,
         s3_data_bands=s3_data_bands,
