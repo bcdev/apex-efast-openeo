@@ -23,6 +23,7 @@ def apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:
     )
 
     t_target = get_t_target_from_context(context)
+    band_suffix = get_target_band_name_suffix_from_context(context)
 
     # The Wizard passes the temporal extent as a xr.IndexVariable which cannot be understood by xr.interp
     if isinstance(t_target, xr.IndexVariable) or isinstance(t_target, xr.DataArray):
@@ -33,15 +34,25 @@ def apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:
         t_target = t_target.tz_localize(None)
 
     interpolated = cube.interp(t=t_target)
+    interpolated = interpolated.assign_coords(
+        bands=[f"{b}{band_suffix}" for b in interpolated.coords["bands"].values]
+    )
     dims = ("t", "bands", "y", "x")
     return interpolated.transpose(*dims)
 
 
 def apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:
     t_target = get_t_target_from_context(context)
+    band_suffix = get_target_band_name_suffix_from_context(context)
+
     metadata = metadata.rename_labels(dimension="t", target=t_target)
+    metadata = metadata.rename_labels(dimension="bands", target=[f"{b}{band_suffix}" for b in metadata.band_names])
     return metadata
 
+def get_target_band_name_suffix_from_context(context):
+    if isinstance(context, dict):
+        return context.get("target_band_name_suffix", "")
+    return ""
 
 def get_t_target_from_context(context):
     if isinstance(context, dict):  # from user parameters

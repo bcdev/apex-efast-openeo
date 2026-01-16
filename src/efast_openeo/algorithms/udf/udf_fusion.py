@@ -18,13 +18,15 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     assert "lr_mosaic_bands" in context, (
         f"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
     )
-    assert "lr_interpolated_bands" in context, (
-        f"The bands of the low resolution interpolated cube 'lr_interpolated_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
+    assert "lr_interpolated_band_name_suffix" in context, (
+        "The suffix differentiating low resolution interpolated bands from composited bands "
+        f"'lr_interpolated_band_name_suffix' provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
     )
 
     hr_mosaic_bands = context["hr_mosaic_bands"]
     lr_mosaic_bands = context["lr_mosaic_bands"]
-    lr_interpolated_bands = context["lr_interpolated_bands"]
+    interpolated_band_suffix = context["lr_interpolated_band_name_suffix"]
+    lr_interpolated_bands = [f"{b}{interpolated_band_suffix}" for b in lr_mosaic_bands]
     target_bands = context.get("target_bands")
     if target_bands is None or len(target_bands) != len(hr_mosaic_bands):
         target_bands = hr_mosaic_bands

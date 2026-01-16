@@ -7,6 +7,7 @@ from efast_openeo.algorithms.temporal_interpolation import (
     interpolate_time_series_to_target_labels,
 )
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
+from efast_openeo.constants import S3_INTERPOLATION_BAND_NAME_SUFFIX
 from efast_openeo.smoothing import smoothing_kernel
 from efast_openeo.util.log import logger
 from efast_openeo import constants
@@ -363,6 +364,7 @@ def efast_openeo(
         temporal_extent=temporal_extent,
         temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
+        target_band_name_suffix=S3_INTERPOLATION_BAND_NAME_SUFFIX,
     )
     s3_composite_target_interp = save_intermediate(
         s3_composite_target_interp,
@@ -374,10 +376,6 @@ def efast_openeo(
         skip_all=skip_all_intermediates,
     )
 
-    s3_composite_target_interp_band_names = [b + "_interpolated" for b in s3_data_bands]
-    s3_composite_target_interp = s3_composite_target_interp.rename_labels(
-        "bands", target=s3_composite_target_interp_band_names, source=s3_data_bands
-    )
     s3_composite_s2_interp = interpolate_time_series_to_target_labels(
         s3_composite_data_bands_smoothed, s2_bands.dimension_labels("t")
     )
@@ -445,7 +443,7 @@ def efast_openeo(
         fusion_input,
         high_resolution_mosaic_band_names=s2_data_bands,
         low_resolution_mosaic_band_names=s3_data_bands,
-        low_resolution_interpolated_band_names=s3_composite_target_interp_band_names,
+        low_resolution_interpolated_band_name_suffix=S3_INTERPOLATION_BAND_NAME_SUFFIX,
         target_band_names=fused_band_names,
         output_ndvi=output_ndvi,
     )

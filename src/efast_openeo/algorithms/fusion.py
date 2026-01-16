@@ -12,7 +12,7 @@ def fusion(
     cube,
     high_resolution_mosaic_band_names: List[str],
     low_resolution_mosaic_band_names: List[str],
-    low_resolution_interpolated_band_names,
+    low_resolution_interpolated_band_name_suffix: str,
     output_ndvi: bool,
     target_band_names: List[str] | None = None,
 ):
@@ -49,7 +49,7 @@ def fusion(
     context = {
         "lr_mosaic_bands": low_resolution_mosaic_band_names,
         "hr_mosaic_bands": high_resolution_mosaic_band_names,
-        "lr_interpolated_bands": low_resolution_interpolated_band_names,
+        "lr_interpolated_band_name_suffix": low_resolution_interpolated_band_name_suffix,
         "output_ndvi": output_ndvi,
     }
     if target_band_names is not None:

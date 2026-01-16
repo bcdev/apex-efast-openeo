@@ -126,7 +126,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         spatial_extent,
         # max_distance_to_cloud_m, # parameter can't define overlap of apply_neighborhood
         # temporal_score_stddev,
-        # s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
+        s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
         s2_data_bands,
         fused_band_names,
         output_ndvi,
@@ -136,12 +136,6 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     # hard coded parameters
 
     # s2_data_bands = ["B02", "B03", "B04", "B8A"]
-    s3_data_bands = [
-        "Syn_Oa04_reflectance",
-        "Syn_Oa06_reflectance",
-        "Syn_Oa08_reflectance",
-        "Syn_Oa17_reflectance",
-    ]
     # fused_band_names = ["B02_fused", "B03_fused", "B04_fused", "B8A_fused"]
     cloud_tolerance_percentage = 0.05
     max_distance_to_cloud_m = 5000
