@@ -12,6 +12,7 @@ from efast_openeo.algorithms.temporal_interpolation import (
 )
 from efast_openeo.algorithms.weighted_composite import compute_weighted_composite
 from efast_openeo.algorithms.fusion import fusion
+from efast_openeo import constants
 from tests.conftest import S2_COLLECTION, S3_COLLECTION
 
 MASK_BAND_S2 = "SCL"
@@ -45,6 +46,7 @@ def s3_at_target_times(time_frame, time_frame_target, interval_days, s3_cube, s2
         temporal_extent=time_frame,
         temporal_extent_target=time_frame_target,
         interval_days=interval_days,
+        target_band_name_suffix=constants.S3_INTERPOLATION_BAND_NAME_SUFFIX,
     )
     return s3_at_target_time
 
@@ -221,18 +223,19 @@ def test_fusion(
         interval_days=interval_days,
         sigma_doy=sigma_doy,
     )
-    merged.dimension_labels("bands").download(
-        persistent_output_dir / "merged_bands.json"
-    )
-    s2_s3_aggregate.dimension_labels("bands").download(
-        persistent_output_dir / "s2_s3_aggregate_bands.json"
-    )
-    lr_m = s2_s3_aggregate.filter_bands(selected_s3_bands)
-    hr_m = s2_s3_aggregate.filter_bands(selected_s2_bands)
-    lr_p = s3_at_target_times.resample_cube_spatial(s2_s3_aggregate)
-
+    #merged.dimension_labels("bands").download(
+    #    persistent_output_dir / "merged_bands.json"
+    #)
+    #s2_s3_aggregate.dimension_labels("bands").download(
+    #    persistent_output_dir / "s2_s3_aggregate_bands.json"
+    #)
+    fusion_input = s2_s3_aggregate.merge_cubes(s3_at_target_times)
     fused = fusion(
-        lr_m, hr_m, lr_p, selected_s3_bands, selected_s2_bands, ["MyBand02", "MyBand03"]
+        fusion_input,
+        high_resolution_mosaic_band_names=selected_s2_bands,
+        low_resolution_mosaic_band_names=selected_s3_bands,
+        low_resolution_interpolated_band_name_suffix=constants.S3_INTERPOLATION_BAND_NAME_SUFFIX,
+        output_ndvi=False, # True requires that s2_data_bands and s3_data_bands is set accordingly
     )
 
     run_openeo(fused, persistent_output_dir / "s2_s3_aggregate")
