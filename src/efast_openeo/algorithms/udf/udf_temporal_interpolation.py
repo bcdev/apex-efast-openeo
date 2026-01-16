@@ -46,7 +46,7 @@ def apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:
 def get_t_target_from_context(context):
     if isinstance(context, dict):  # from user parameters
         temporal_extent = context.get("temporal_extent_target")
-        if temporal_extent is None: # use input temporal extent as a fallback if temporal extent target is not set
+        if temporal_extent is None or len(temporal_extent) == 0: # use input temporal extent as a fallback if temporal extent target is not set
             temporal_extent = context["temporal_extent_input"]
         interval_days = context["interval_days"]
         t_target = compute_t_target(temporal_extent, interval_days)
