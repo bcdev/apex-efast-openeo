@@ -197,7 +197,7 @@ def main(
     if synchronous:
         fused.download(output_dir / "fused.nc")
     else:
-        fused.execute_batch(output_dir / "fused.nc")
+        fused.execute_batch(output_dir / "fused.nc", title="EFAST full chain")
     logger.info("Done")
 
 
