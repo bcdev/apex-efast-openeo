@@ -330,12 +330,9 @@
         "loadcollection3": {
             "process_id": "load_collection",
             "arguments": {
-                "bands": [
-                    "Syn_Oa04_reflectance",
-                    "Syn_Oa06_reflectance",
-                    "Syn_Oa08_reflectance",
-                    "Syn_Oa17_reflectance"
-                ],
+                "bands": {
+                    "from_parameter": "s3_data_bands"
+                },
                 "featureflags": {
                     "reprojection_type": "binning",
                     "super_sampling": 2
@@ -596,12 +593,9 @@
         "filterbands1": {
             "process_id": "filter_bands",
             "arguments": {
-                "bands": [
-                    "Syn_Oa04_reflectance",
-                    "Syn_Oa06_reflectance",
-                    "Syn_Oa08_reflectance",
-                    "Syn_Oa17_reflectance"
-                ],
+                "bands": {
+                    "from_parameter": "s3_data_bands"
+                },
                 "data": {
                     "from_node": "applydimension1"
                 }
@@ -677,7 +671,7 @@
                                     "from_parameter": "data"
                                 },
                                 "runtime": "Python",
-                                "udf": "import pandas as pd\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\n\nfrom datetime import datetime, timezone\n\n\ndef apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:\n    \"\"\"\n    Interpolate cube to the time series passed as context.\n    Currently (2025-09-30), on the CDSE OpenEO backend, the target time series can only be passed as the complete context,\n    when using the ``dimension_labels`` process. This is necessary to pass the S2 time series directly\n    from an S2 cube with a user-defined temporal extent.\n    This UDF supports two cases: passing the target time series ``t_target`` as a pd.Datetimeidex\n    (this is what happens when chaining with the dimension_labels process) and passing dictionary as a context,\n    which defines the time series through the parameters ``temporal_extent`` (left incl, right excl)\n    and ``interval_days``.\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n\n    t_target = get_t_target_from_context(context)\n\n    # The Wizard passes the temporal extent as a xr.IndexVariable which cannot be understood by xr.interp\n    if isinstance(t_target, xr.IndexVariable) or isinstance(t_target, xr.DataArray):\n        t_target = t_target.values\n    t_target = pd.to_datetime(t_target)\n\n    if getattr(t_target, \"tz\", None) is not None:\n        t_target = t_target.tz_localize(None)\n\n    interpolated = cube.interp(t=t_target)\n    dims = (\"t\", \"bands\", \"y\", \"x\")\n    return interpolated.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:\n    t_target = get_t_target_from_context(context)\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    return metadata\n\n\ndef get_t_target_from_context(context):\n    if isinstance(context, dict):  # from user parameters\n        temporal_extent = context.get(\"temporal_extent_target\")\n        if temporal_extent is None or len(temporal_extent) == 0: # use input temporal extent as a fallback if temporal extent target is not set\n            temporal_extent = context[\"temporal_extent_input\"]\n        interval_days = context[\"interval_days\"]\n        t_target = compute_t_target(temporal_extent, interval_days)\n    else:\n        t_target = context\n\n    return t_target\n\n\ndef compute_t_target(temporal_extent, interval_days) -> pd.DatetimeIndex:\n    t_target = xr.date_range(\n        temporal_extent[0],\n        temporal_extent[1],\n        freq=f\"{interval_days}D\",\n        inclusive=\"left\",\n    )\n    return t_target\n"
+                                "udf": "import pandas as pd\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\n\nfrom datetime import datetime, timezone\n\n\ndef apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:\n    \"\"\"\n    Interpolate cube to the time series passed as context.\n    Currently (2025-09-30), on the CDSE OpenEO backend, the target time series can only be passed as the complete context,\n    when using the ``dimension_labels`` process. This is necessary to pass the S2 time series directly\n    from an S2 cube with a user-defined temporal extent.\n    This UDF supports two cases: passing the target time series ``t_target`` as a pd.Datetimeidex\n    (this is what happens when chaining with the dimension_labels process) and passing dictionary as a context,\n    which defines the time series through the parameters ``temporal_extent`` (left incl, right excl)\n    and ``interval_days``.\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n\n    t_target = get_t_target_from_context(context)\n    band_suffix = get_target_band_name_suffix_from_context(context)\n\n    # The Wizard passes the temporal extent as a xr.IndexVariable which cannot be understood by xr.interp\n    if isinstance(t_target, xr.IndexVariable) or isinstance(t_target, xr.DataArray):\n        t_target = t_target.values\n    t_target = pd.to_datetime(t_target)\n\n    if getattr(t_target, \"tz\", None) is not None:\n        t_target = t_target.tz_localize(None)\n\n    interpolated = cube.interp(t=t_target)\n    interpolated = interpolated.assign_coords(\n        bands=[f\"{b}{band_suffix}\" for b in interpolated.coords[\"bands\"].values]\n    )\n    dims = (\"t\", \"bands\", \"y\", \"x\")\n    return interpolated.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:\n    t_target = get_t_target_from_context(context)\n    band_suffix = get_target_band_name_suffix_from_context(context)\n\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    metadata = metadata.rename_labels(dimension=\"bands\", target=[f\"{b}{band_suffix}\" for b in metadata.band_names])\n    return metadata\n\ndef get_target_band_name_suffix_from_context(context):\n    if isinstance(context, dict):\n        return context.get(\"target_band_name_suffix\", \"\")\n    return \"\"\n\ndef get_t_target_from_context(context):\n    if isinstance(context, dict):  # from user parameters\n        temporal_extent = context.get(\"temporal_extent_target\")\n        if temporal_extent is None or len(temporal_extent) == 0: # use input temporal extent as a fallback if temporal extent target is not set\n            temporal_extent = context[\"temporal_extent_input\"]\n        interval_days = context[\"interval_days\"]\n        t_target = compute_t_target(temporal_extent, interval_days)\n    else:\n        t_target = context\n\n    return t_target\n\n\ndef compute_t_target(temporal_extent, interval_days) -> pd.DatetimeIndex:\n    t_target = xr.date_range(\n        temporal_extent[0],\n        temporal_extent[1],\n        freq=f\"{interval_days}D\",\n        inclusive=\"left\",\n    )\n    return t_target\n"
                             },
                             "result": true
                         }
@@ -747,7 +741,8 @@
                     },
                     "interval_days": {
                         "from_parameter": "interval_days"
-                    }
+                    },
+                    "target_band_name_suffix": "_interpolated"
                 },
                 "data": {
                     "from_node": "applykernel1"
@@ -765,33 +760,12 @@
                                     "from_parameter": "data"
                                 },
                                 "runtime": "Python",
-                                "udf": "import pandas as pd\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\n\nfrom datetime import datetime, timezone\n\n\ndef apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:\n    \"\"\"\n    Interpolate cube to the time series passed as context.\n    Currently (2025-09-30), on the CDSE OpenEO backend, the target time series can only be passed as the complete context,\n    when using the ``dimension_labels`` process. This is necessary to pass the S2 time series directly\n    from an S2 cube with a user-defined temporal extent.\n    This UDF supports two cases: passing the target time series ``t_target`` as a pd.Datetimeidex\n    (this is what happens when chaining with the dimension_labels process) and passing dictionary as a context,\n    which defines the time series through the parameters ``temporal_extent`` (left incl, right excl)\n    and ``interval_days``.\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n\n    t_target = get_t_target_from_context(context)\n\n    # The Wizard passes the temporal extent as a xr.IndexVariable which cannot be understood by xr.interp\n    if isinstance(t_target, xr.IndexVariable) or isinstance(t_target, xr.DataArray):\n        t_target = t_target.values\n    t_target = pd.to_datetime(t_target)\n\n    if getattr(t_target, \"tz\", None) is not None:\n        t_target = t_target.tz_localize(None)\n\n    interpolated = cube.interp(t=t_target)\n    dims = (\"t\", \"bands\", \"y\", \"x\")\n    return interpolated.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:\n    t_target = get_t_target_from_context(context)\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    return metadata\n\n\ndef get_t_target_from_context(context):\n    if isinstance(context, dict):  # from user parameters\n        temporal_extent = context.get(\"temporal_extent_target\")\n        if temporal_extent is None or len(temporal_extent) == 0: # use input temporal extent as a fallback if temporal extent target is not set\n            temporal_extent = context[\"temporal_extent_input\"]\n        interval_days = context[\"interval_days\"]\n        t_target = compute_t_target(temporal_extent, interval_days)\n    else:\n        t_target = context\n\n    return t_target\n\n\ndef compute_t_target(temporal_extent, interval_days) -> pd.DatetimeIndex:\n    t_target = xr.date_range(\n        temporal_extent[0],\n        temporal_extent[1],\n        freq=f\"{interval_days}D\",\n        inclusive=\"left\",\n    )\n    return t_target\n"
+                                "udf": "import pandas as pd\nimport xarray as xr\nfrom openeo.metadata import CubeMetadata\n\nfrom datetime import datetime, timezone\n\n\ndef apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:\n    \"\"\"\n    Interpolate cube to the time series passed as context.\n    Currently (2025-09-30), on the CDSE OpenEO backend, the target time series can only be passed as the complete context,\n    when using the ``dimension_labels`` process. This is necessary to pass the S2 time series directly\n    from an S2 cube with a user-defined temporal extent.\n    This UDF supports two cases: passing the target time series ``t_target`` as a pd.Datetimeidex\n    (this is what happens when chaining with the dimension_labels process) and passing dictionary as a context,\n    which defines the time series through the parameters ``temporal_extent`` (left incl, right excl)\n    and ``interval_days``.\n\n    Expects ``cube`` to be an array of dimensions (t, bands, y, x)\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n\n    t_target = get_t_target_from_context(context)\n    band_suffix = get_target_band_name_suffix_from_context(context)\n\n    # The Wizard passes the temporal extent as a xr.IndexVariable which cannot be understood by xr.interp\n    if isinstance(t_target, xr.IndexVariable) or isinstance(t_target, xr.DataArray):\n        t_target = t_target.values\n    t_target = pd.to_datetime(t_target)\n\n    if getattr(t_target, \"tz\", None) is not None:\n        t_target = t_target.tz_localize(None)\n\n    interpolated = cube.interp(t=t_target)\n    interpolated = interpolated.assign_coords(\n        bands=[f\"{b}{band_suffix}\" for b in interpolated.coords[\"bands\"].values]\n    )\n    dims = (\"t\", \"bands\", \"y\", \"x\")\n    return interpolated.transpose(*dims)\n\n\ndef apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:\n    t_target = get_t_target_from_context(context)\n    band_suffix = get_target_band_name_suffix_from_context(context)\n\n    metadata = metadata.rename_labels(dimension=\"t\", target=t_target)\n    metadata = metadata.rename_labels(dimension=\"bands\", target=[f\"{b}{band_suffix}\" for b in metadata.band_names])\n    return metadata\n\ndef get_target_band_name_suffix_from_context(context):\n    if isinstance(context, dict):\n        return context.get(\"target_band_name_suffix\", \"\")\n    return \"\"\n\ndef get_t_target_from_context(context):\n    if isinstance(context, dict):  # from user parameters\n        temporal_extent = context.get(\"temporal_extent_target\")\n        if temporal_extent is None or len(temporal_extent) == 0: # use input temporal extent as a fallback if temporal extent target is not set\n            temporal_extent = context[\"temporal_extent_input\"]\n        interval_days = context[\"interval_days\"]\n        t_target = compute_t_target(temporal_extent, interval_days)\n    else:\n        t_target = context\n\n    return t_target\n\n\ndef compute_t_target(temporal_extent, interval_days) -> pd.DatetimeIndex:\n    t_target = xr.date_range(\n        temporal_extent[0],\n        temporal_extent[1],\n        freq=f\"{interval_days}D\",\n        inclusive=\"left\",\n    )\n    return t_target\n"
                             },
                             "result": true
                         }
                     }
                 }
-            }
-        },
-        "renamelabels1": {
-            "process_id": "rename_labels",
-            "arguments": {
-                "data": {
-                    "from_node": "applydimension4"
-                },
-                "dimension": "bands",
-                "source": [
-                    "Syn_Oa04_reflectance",
-                    "Syn_Oa06_reflectance",
-                    "Syn_Oa08_reflectance",
-                    "Syn_Oa17_reflectance"
-                ],
-                "target": [
-                    "Syn_Oa04_reflectance_interpolated",
-                    "Syn_Oa06_reflectance_interpolated",
-                    "Syn_Oa08_reflectance_interpolated",
-                    "Syn_Oa17_reflectance_interpolated"
-                ]
             }
         },
         "mergecubes4": {
@@ -801,7 +775,7 @@
                     "from_node": "applydimension3"
                 },
                 "cube2": {
-                    "from_node": "renamelabels1"
+                    "from_node": "applydimension4"
                 }
             }
         },
@@ -809,21 +783,13 @@
             "process_id": "apply_dimension",
             "arguments": {
                 "context": {
-                    "lr_mosaic_bands": [
-                        "Syn_Oa04_reflectance",
-                        "Syn_Oa06_reflectance",
-                        "Syn_Oa08_reflectance",
-                        "Syn_Oa17_reflectance"
-                    ],
+                    "lr_mosaic_bands": {
+                        "from_parameter": "s3_data_bands"
+                    },
                     "hr_mosaic_bands": {
                         "from_parameter": "s2_data_bands"
                     },
-                    "lr_interpolated_bands": [
-                        "Syn_Oa04_reflectance_interpolated",
-                        "Syn_Oa06_reflectance_interpolated",
-                        "Syn_Oa08_reflectance_interpolated",
-                        "Syn_Oa17_reflectance_interpolated"
-                    ],
+                    "lr_interpolated_band_name_suffix": "_interpolated",
                     "output_ndvi": {
                         "from_parameter": "output_ndvi"
                     },
@@ -847,7 +813,7 @@
                                     "from_parameter": "data"
                                 },
                                 "runtime": "Python",
-                                "udf": "import xarray as xr\nimport numpy as np\nfrom openeo.metadata import CubeMetadata\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes the main fusion procedure, equation (3) in [1].\n\n    [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 11. https://doi.org/10.3390/rs16111833.\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n    assert \"hr_mosaic_bands\" in context, (\n        f\"The high resolution mosaic bands 'hr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_mosaic_bands\" in context, (\n        f\"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_interpolated_bands\" in context, (\n        f\"The bands of the low resolution interpolated cube 'lr_interpolated_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n\n    hr_mosaic_bands = context[\"hr_mosaic_bands\"]\n    lr_mosaic_bands = context[\"lr_mosaic_bands\"]\n    lr_interpolated_bands = context[\"lr_interpolated_bands\"]\n    target_bands = context.get(\"target_bands\")\n    if target_bands is None or len(target_bands) != len(hr_mosaic_bands):\n        target_bands = hr_mosaic_bands\n    output_ndvi = context.get(\"output_ndvi\", False)\n\n    fused = fuse(\n        cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands\n    )\n    if output_ndvi:\n        nir = cube.sel(bands=\"B8A\")\n        red = cube.sel(bands=\"B04\")\n        ndvi = (nir - red) / (nir + red)\n        # TODO may break on older version of xarray\n        ndvi_formatted = ndvi.expand_dims({\"bands\": [\"ndvi\"]}, axis=fused.dims.index(\"bands\"))\n        return ndvi_formatted\n\n    return fused\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    target_bands = context.get(\"target_bands\", context[\"hr_mosaic_bands\"])\n    output_ndvi = context.get(\"output_ndvi\", False)\n    if output_ndvi:\n        target_bands = [\"ndvi\"]\n    metadata = metadata.rename_labels(dimension=\"bands\", target=target_bands)\n    return metadata\n\n\ndef fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):\n    fused_list = [\n        # Pixels where there is no data in either lr_m or lr_p are skipped, to avoid\n        # only adding or only subtracting from the S2 composite, which would result in unusually high or low\n        # (e.g. negative values).\n        xr.where(\n            (cube.sel(bands=lr_m) == 0)\n            | np.isnan(cube.sel(bands=lr_m))\n            | (cube.sel(bands=lr_p) == 0)\n            | np.isnan(cube.sel(bands=lr_p)),\n            cube.sel(bands=hr_m).squeeze(),\n            cube.sel(bands=[hr_m, lr_p]).sum(dim=\"bands\")\n            - cube.sel(bands=lr_m).squeeze(),\n        )\n        for (hr_m, lr_m, lr_p) in zip(\n            hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands\n        )\n    ]\n\n    fused = xr.concat(fused_list, dim=\"bands\")\n    fused = fused.assign_coords(bands=target_bands)\n    return fused\n"
+                                "udf": "import xarray as xr\nimport numpy as np\nfrom openeo.metadata import CubeMetadata\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes the main fusion procedure, equation (3) in [1].\n\n    [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 11. https://doi.org/10.3390/rs16111833.\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n    assert \"hr_mosaic_bands\" in context, (\n        f\"The high resolution mosaic bands 'hr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_mosaic_bands\" in context, (\n        f\"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_interpolated_band_name_suffix\" in context, (\n        \"The suffix differentiating low resolution interpolated bands from composited bands \"\n        f\"'lr_interpolated_band_name_suffix' provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n\n    hr_mosaic_bands = context[\"hr_mosaic_bands\"]\n    lr_mosaic_bands = context[\"lr_mosaic_bands\"]\n    interpolated_band_suffix = context[\"lr_interpolated_band_name_suffix\"]\n    lr_interpolated_bands = [f\"{b}{interpolated_band_suffix}\" for b in lr_mosaic_bands]\n    target_bands = context.get(\"target_bands\")\n    if target_bands is None or len(target_bands) != len(hr_mosaic_bands):\n        target_bands = hr_mosaic_bands\n    output_ndvi = context.get(\"output_ndvi\", False)\n\n    fused = fuse(\n        cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands\n    )\n    if output_ndvi:\n        nir = cube.sel(bands=\"B8A\")\n        red = cube.sel(bands=\"B04\")\n        ndvi = (nir - red) / (nir + red)\n        # TODO may break on older version of xarray\n        ndvi_formatted = ndvi.expand_dims({\"bands\": [\"ndvi\"]}, axis=fused.dims.index(\"bands\"))\n        return ndvi_formatted\n\n    return fused\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    target_bands = context.get(\"target_bands\", context[\"hr_mosaic_bands\"])\n    output_ndvi = context.get(\"output_ndvi\", False)\n    if output_ndvi:\n        target_bands = [\"ndvi\"]\n    metadata = metadata.rename_labels(dimension=\"bands\", target=target_bands)\n    return metadata\n\n\ndef fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):\n    fused_list = [\n        # Pixels where there is no data in either lr_m or lr_p are skipped, to avoid\n        # only adding or only subtracting from the S2 composite, which would result in unusually high or low\n        # (e.g. negative values).\n        xr.where(\n            (cube.sel(bands=lr_m) == 0)\n            | np.isnan(cube.sel(bands=lr_m))\n            | (cube.sel(bands=lr_p) == 0)\n            | np.isnan(cube.sel(bands=lr_p)),\n            cube.sel(bands=hr_m).squeeze(),\n            cube.sel(bands=[hr_m, lr_p]).sum(dim=\"bands\")\n            - cube.sel(bands=lr_m).squeeze(),\n        )\n        for (hr_m, lr_m, lr_p) in zip(\n            hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands\n        )\n    ]\n\n    fused = xr.concat(fused_list, dim=\"bands\")\n    fused = fused.assign_coords(bands=target_bands)\n    return fused\n"
                             },
                             "result": true
                         }
@@ -913,6 +879,23 @@
                 "type": "object",
                 "subtype": "geojson"
             }
+        },
+        {
+            "name": "s3_data_bands",
+            "description": "Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection) used in the fusion procedure. The order should match the corresponding s2_data_bands and fused_band_names parameters.",
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "default": [
+                "Syn_Oa04_reflectance",
+                "Syn_Oa06_reflectance",
+                "Syn_Oa08_reflectance",
+                "Syn_Oa17_reflectance"
+            ],
+            "optional": true
         },
         {
             "name": "s2_data_bands",
