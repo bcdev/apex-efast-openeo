@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import textwrap
 
 import click
 import openeo
@@ -28,8 +29,9 @@ def export(json_path: Path):
             "with a fine resolution in space and time from a fine spatial but coarse temporal resolution source "
             "(Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3)."
         ),
-        description=(
-            """The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) [1] is a method to create
+        description=textwrap.dedent(
+            """\
+            The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) [1] is a method to create
             time-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution
             source (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).
             In comparison to other methods, EFAST aims to achieve results outperforming single-source interpolation
