@@ -37,8 +37,8 @@ def export(json_path: Path):
             In comparison to other methods, EFAST aims to achieve results outperforming single-source interpolation
             without paying the computational cost of other methods leveraging spatial context.
             EFAST is focused on accurately capturing seasonal vegetation changes in homogeneous areas like range lands.
-            DHI-GRAS has published a Python implementation of the algorithm [2]. In the context of the ESA funded APEx
-            initiative [3], the algorithm has been ported to OpenEO and is implemented in this process graph.
+            DHI-GRAS has published a [Python implementation of the algorithm](https://github.com/DHI-GRAS/efast).
+            In the context of the ESA funded [APEx initiative](https://apex.esa.int/), the algorithm has been ported to OpenEO and is implemented in this process graph.
             
             EFAST interpolates Sentinel-2 acquisitions, using a time (temporal distance to target time) and
             distance-to-cloud weighted compositing scheme. The Sentinel-3 time-series is incorporated to locally update
@@ -56,9 +56,6 @@ def export(json_path: Path):
             
              
             [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. “Fast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.” Remote Sensing 16, no. 11 (2024): 1833.
-            [2]: https://github.com/DHI-GRAS/efast
-            [3]: https://apex.esa.int/
-            [4]: https://github.com/bcdev/efast-process-graph/
             """
         ),
         parameters=params,
