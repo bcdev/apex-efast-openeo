@@ -144,7 +144,7 @@ def efast_openeo(
     max_distance_to_cloud_s3_px = max_distance_to_cloud_m / constants.S3_RESOLUTION_M
 
     # Separate ``load_collection`` calls must be used (not filter_bands) because of a backend bug
-    # TODO link corresponding forum post
+    # https://forum.dataspace.copernicus.eu/t/combination-of-apply-neighborhood-and-merge-cubes-leads-to-additional-labels-in-the-time-dimension/4189/3
     s3_flags = connection.load_collection(
         constants.S3_COLLECTION,
         spatial_extent=bbox,
