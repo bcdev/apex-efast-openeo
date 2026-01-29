@@ -1,12 +1,14 @@
 from pathlib import Path
 
 import pytest
+from openeo import processes
 
 from efast_openeo.algorithms.distance_to_cloud import (
     distance_to_cloud,
     compute_cloud_mask_s2,
     compute_cloud_mask_s3,
 )
+from efast_openeo import constants
 
 CLOUD_BAND_S2 = "SCL"
 CLOUD_BAND_S3 = "CLOUD_flags"
@@ -123,6 +125,57 @@ def test_distance_to_cloud_s3_pixels(
     )
     execute(dtc)((persistent_output_dir / "dtc_s3_pixels").with_suffix(file_extension))
 
+@pytest.mark.openeo
+@pytest.mark.manual
+def test_distance_to_cloud_s3_pixels_binning_mask(
+        s3_cube,
+        s3_bands,
+        connection,
+        persistent_output_dir,
+        image_size_pixels,
+        overlap_size_pixels,
+        run_openeo,
+):
+    s3_cube.result_node().update_arguments(featureflags=dict(
+        reprojection_type="binning",
+        super_sampling=2,
+        flag_band=constants.S3_FLAG_BAND,
+        flag_bitmask=0xff,
+    ))
+
+    first_band = s3_bands[0]
+    band = s3_cube.band(first_band)
+    cloud_mask = band.apply(lambda x: processes.is_nodata(x))
+    dtc = distance_to_cloud(
+        cloud_mask,
+        image_size_pixels,
+        max_distance_pixels=overlap_size_pixels,
+        pixel_size_native_units=DEGREES_PER_PIXEL_S3,
+    )
+
+    run_openeo(cloud_mask, persistent_output_dir / "s3_cloud_mask_binning")
+    run_openeo(dtc, persistent_output_dir / "dtc_s3_pixels_binning")
+
+@pytest.mark.openeo
+@pytest.mark.manual
+def test_distance_to_cloud_s3_pixels_scl_mask(
+        s3_cube,
+        connection,
+        persistent_output_dir,
+        image_size_pixels,
+        overlap_size_pixels,
+        run_openeo,
+):
+    scl = s3_cube.band(CLOUD_BAND_S3)
+    cloud_mask = compute_cloud_mask_s3(scl)
+    dtc = distance_to_cloud(
+        cloud_mask,
+        image_size_pixels,
+        max_distance_pixels=overlap_size_pixels,
+        pixel_size_native_units=DEGREES_PER_PIXEL_S3,
+    )
+    run_openeo(cloud_mask, persistent_output_dir / "s3_cloud_mask_scl")
+    run_openeo(dtc, persistent_output_dir / "dtc_s3_pixels_scl")
 
 @pytest.mark.openeo
 @pytest.mark.manual
