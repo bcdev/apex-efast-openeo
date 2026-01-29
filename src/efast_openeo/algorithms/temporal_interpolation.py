@@ -14,7 +14,7 @@ def interpolate_time_series_to_target_extent(cube, *, temporal_extent, interval_
         UDF_TEMPORAL_INTERPOLATION,
         context={"from_parameter": "context"},
         runtime="Python",
-    )  # , version="3")
+    )
     context = dict(
         temporal_extent_input=temporal_extent,
         temporal_extent_target=temporal_extent_target,

@@ -135,7 +135,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         # max_distance_to_cloud_m, # parameter can't define overlap of apply_neighborhood
         # temporal_score_stddev,
         s2_data_bands,
-        s3_data_bands, # doesn't work yet, as I modify the bands names to distinguish between interpolated names and composite names
+        s3_data_bands,
         output_ndvi,
         # cloud_tolerance_percentage, Unexpected error in backend when using gte process
     ]

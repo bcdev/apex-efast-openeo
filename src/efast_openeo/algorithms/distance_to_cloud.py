@@ -11,7 +11,6 @@ UDF_DISTANCE_TRANSFORM_PATH = importlib.resources.files(
 
 # TODO move
 def compute_cloud_mask_s2(s2_scl: openeo.DataCube) -> openeo.DataCube:
-    # return s2_scl > S2Scl.WATER
     return (
         (s2_scl == S2Scl.NO_DATA)
         | (s2_scl == S2Scl.CLOUD_SHADOW)
