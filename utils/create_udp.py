@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-import textwrap
+import importlib
 
 import click
 import openeo
@@ -21,6 +21,8 @@ def export(json_path: Path):
         "https://openeo.dataspace.copernicus.eu/"
     ).authenticate_oidc()
     params, process_graph = create_efast_udp(connection)
+    process_description_resource = importlib.resources.files("efast_openeo.data").joinpath("process-description.md")
+    process_description = process_description_resource.read_text(encoding="utf-8")
     pg_with_metadata = openeo.rest.udp.build_process_dict(
         process_graph,
         process_id="efast",
@@ -29,35 +31,7 @@ def export(json_path: Path):
             "with a fine resolution in space and time from a fine spatial but coarse temporal resolution source "
             "(Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3)."
         ),
-        description=textwrap.dedent(
-            """\
-            The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) [1] is a method to create
-            time-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution
-            source (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).
-            In comparison to other methods, EFAST aims to achieve results outperforming single-source interpolation
-            without paying the computational cost of other methods leveraging spatial context.
-            EFAST is focused on accurately capturing seasonal vegetation changes in homogeneous areas like range lands.
-            DHI-GRAS has published a [Python implementation of the algorithm](https://github.com/DHI-GRAS/efast).
-            In the context of the ESA funded [APEx initiative](https://apex.esa.int/), the algorithm has been ported to OpenEO and is implemented in this process graph.
-            
-            EFAST interpolates Sentinel-2 acquisitions, using a time (temporal distance to target time) and
-            distance-to-cloud weighted compositing scheme. The Sentinel-3 time-series is incorporated to locally update
-            the interpolated Sentinel-2 imagery to accurately track vegetation changes between cloud-free Sentinel-2
-            acquisitions. The method is described in detail in [1].
-            
-            EFAST produces high temporal frequency time-series matching the Sentinel-2 L2A bands which have
-            corresponding Sentinel-3 OLCI bands with matching centre frequencies. Because the application of EFAST is
-            focused on NDVI time-series, the UDP includes a parameter (output_ndvi) to directly compute the NDVI
-            for a given temporal and spatial extent.
-            
-            It should be noted that OpenEO provides bands from the SENTINEL_L2A collection in integer format. EFAST
-            converts the data to floating point values for interpolation. Therefore, output bands of EFAST have a
-            different data type (floating point) than the corresponding SENTINEL_L2A bands.
-            
-             
-            [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. “Fast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.” Remote Sensing 16, no. 11 (2024): 1833.
-            """
-        ),
+        description=process_description,
         parameters=params,
     )
 

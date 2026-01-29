@@ -6,10 +6,6 @@
                 "bands": {
                     "from_parameter": "s2_data_bands"
                 },
-                "featureflags": {
-                    "reprojection_type": "binning",
-                    "super_sampling": 2
-                },
                 "id": "SENTINEL2_L2A",
                 "spatial_extent": {
                     "from_parameter": "spatial_extent"
@@ -327,6 +323,28 @@
                 "dimension": "t"
             }
         },
+        "arrayfilter1": {
+            "process_id": "array_filter",
+            "arguments": {
+                "condition": {
+                    "process_graph": {
+                        "neq1": {
+                            "process_id": "neq",
+                            "arguments": {
+                                "x": {
+                                    "from_parameter": "x"
+                                },
+                                "y": "CLOUD_flags"
+                            },
+                            "result": true
+                        }
+                    }
+                },
+                "data": {
+                    "from_parameter": "s3_data_bands"
+                }
+            }
+        },
         "loadcollection3": {
             "process_id": "load_collection",
             "arguments": {
@@ -335,7 +353,9 @@
                 },
                 "featureflags": {
                     "reprojection_type": "binning",
-                    "super_sampling": 2
+                    "super_sampling": 2,
+                    "flag_band": "CLOUD_flags",
+                    "flag_bitmask": 255
                 },
                 "id": "SENTINEL3_SYN_L2_SYN",
                 "spatial_extent": {
@@ -377,18 +397,14 @@
                 }
             }
         },
-        "loadcollection4": {
-            "process_id": "load_collection",
+        "filterbands1": {
+            "process_id": "filter_bands",
             "arguments": {
-                "bands": [
-                    "CLOUD_flags"
-                ],
-                "id": "SENTINEL3_SYN_L2_SYN",
-                "spatial_extent": {
-                    "from_parameter": "spatial_extent"
+                "bands": {
+                    "from_node": "arrayfilter1"
                 },
-                "temporal_extent": {
-                    "from_parameter": "temporal_extent"
+                "data": {
+                    "from_node": "apply5"
                 }
             }
         },
@@ -396,7 +412,7 @@
             "process_id": "reduce_dimension",
             "arguments": {
                 "data": {
-                    "from_node": "loadcollection4"
+                    "from_node": "filterbands1"
                 },
                 "dimension": "bands",
                 "reducer": {
@@ -408,15 +424,27 @@
                                     "from_parameter": "data"
                                 },
                                 "index": 0
-                            }
-                        },
-                        "gt2": {
-                            "process_id": "gt",
+                            },
+                            "result": true
+                        }
+                    }
+                }
+            }
+        },
+        "apply6": {
+            "process_id": "apply",
+            "arguments": {
+                "data": {
+                    "from_node": "reducedimension2"
+                },
+                "process": {
+                    "process_graph": {
+                        "isnodata1": {
+                            "process_id": "is_nodata",
                             "arguments": {
                                 "x": {
-                                    "from_node": "arrayelement2"
-                                },
-                                "y": 0
+                                    "from_parameter": "x"
+                                }
                             },
                             "result": true
                         }
@@ -428,7 +456,7 @@
             "process_id": "apply_neighborhood",
             "arguments": {
                 "data": {
-                    "from_node": "reducedimension2"
+                    "from_node": "apply6"
                 },
                 "overlap": [
                     {
@@ -475,7 +503,7 @@
                 ]
             }
         },
-        "apply6": {
+        "apply7": {
             "process_id": "apply",
             "arguments": {
                 "data": {
@@ -506,11 +534,11 @@
                 }
             }
         },
-        "apply7": {
+        "apply8": {
             "process_id": "apply",
             "arguments": {
                 "data": {
-                    "from_node": "apply6"
+                    "from_node": "apply7"
                 },
                 "process": {
                     "process_graph": {
@@ -533,7 +561,7 @@
             "process_id": "add_dimension",
             "arguments": {
                 "data": {
-                    "from_node": "apply7"
+                    "from_node": "apply8"
                 },
                 "label": "distance_score",
                 "name": "bands",
@@ -544,7 +572,7 @@
             "process_id": "merge_cubes",
             "arguments": {
                 "cube1": {
-                    "from_node": "apply5"
+                    "from_node": "filterbands1"
                 },
                 "cube2": {
                     "from_node": "adddimension2"
@@ -590,11 +618,11 @@
                 }
             }
         },
-        "filterbands1": {
+        "filterbands2": {
             "process_id": "filter_bands",
             "arguments": {
                 "bands": {
-                    "from_parameter": "s3_data_bands"
+                    "from_node": "arrayfilter1"
                 },
                 "data": {
                     "from_node": "applydimension1"
@@ -606,7 +634,7 @@
             "arguments": {
                 "border": 0,
                 "data": {
-                    "from_node": "filterbands1"
+                    "from_node": "filterbands2"
                 },
                 "factor": 1.0,
                 "kernel": [
@@ -810,7 +838,7 @@
                                     "from_parameter": "data"
                                 },
                                 "runtime": "Python",
-                                "udf": "import xarray as xr\nimport numpy as np\nfrom openeo.metadata import CubeMetadata\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes the main fusion procedure, equation (3) in [1].\n\n    [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 11. https://doi.org/10.3390/rs16111833.\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n    assert \"hr_mosaic_bands\" in context, (\n        f\"The high resolution mosaic bands 'hr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_mosaic_bands\" in context, (\n        f\"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_interpolated_band_name_suffix\" in context, (\n        \"The suffix differentiating low resolution interpolated bands from composited bands \"\n        f\"'lr_interpolated_band_name_suffix' provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n\n    hr_mosaic_bands = context[\"hr_mosaic_bands\"]\n    lr_mosaic_bands = context[\"lr_mosaic_bands\"]\n    interpolated_band_suffix = context[\"lr_interpolated_band_name_suffix\"]\n    lr_interpolated_bands = [f\"{b}{interpolated_band_suffix}\" for b in lr_mosaic_bands]\n    target_bands = context.get(\"target_bands\")\n    if target_bands is None or len(target_bands) != len(hr_mosaic_bands):\n        target_bands = hr_mosaic_bands\n    output_ndvi = context.get(\"output_ndvi\", False)\n\n    fused = fuse(\n        cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands\n    )\n    if output_ndvi:\n        nir = cube.sel(bands=\"B8A\")\n        red = cube.sel(bands=\"B04\")\n        ndvi = (nir - red) / (nir + red)\n        # TODO may break on older version of xarray\n        ndvi_formatted = ndvi.expand_dims({\"bands\": [\"ndvi\"]}, axis=fused.dims.index(\"bands\"))\n        return ndvi_formatted\n\n    return fused\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    target_bands = context.get(\"target_bands\", context[\"hr_mosaic_bands\"])\n    output_ndvi = context.get(\"output_ndvi\", False)\n    if output_ndvi:\n        target_bands = [\"ndvi\"]\n    metadata = metadata.rename_labels(dimension=\"bands\", target=target_bands)\n    return metadata\n\n\ndef fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):\n    fused_list = [\n        # Pixels where there is no data in either lr_m or lr_p are skipped, to avoid\n        # only adding or only subtracting from the S2 composite, which would result in unusually high or low\n        # (e.g. negative values).\n        xr.where(\n            (cube.sel(bands=lr_m) == 0)\n            | np.isnan(cube.sel(bands=lr_m))\n            | (cube.sel(bands=lr_p) == 0)\n            | np.isnan(cube.sel(bands=lr_p)),\n            cube.sel(bands=hr_m).squeeze(),\n            cube.sel(bands=[hr_m, lr_p]).sum(dim=\"bands\")\n            - cube.sel(bands=lr_m).squeeze(),\n        )\n        for (hr_m, lr_m, lr_p) in zip(\n            hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands\n        )\n    ]\n\n    fused = xr.concat(fused_list, dim=\"bands\")\n    fused = fused.assign_coords(bands=target_bands)\n    return fused\n"
+                                "udf": "import xarray as xr\nimport numpy as np\nfrom openeo.metadata import CubeMetadata\n\n\ndef apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:\n    \"\"\"\n    Computes the main fusion procedure, equation (3) in [1].\n\n    [1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 11. https://doi.org/10.3390/rs16111833.\n    \"\"\"\n    assert \"bands\" in cube.dims, (\n        f\"cube must have a 'bands' dimension, found '{cube.dims}'\"\n    )\n    assert \"hr_mosaic_bands\" in context, (\n        f\"The high resolution mosaic bands 'hr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_mosaic_bands\" in context, (\n        f\"The low resolution bands 'lr_mosaic_bands' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n    assert \"lr_interpolated_band_name_suffix\" in context, (\n        \"The suffix differentiating low resolution interpolated bands from composited bands \"\n        f\"'lr_interpolated_band_name_suffix' provided in the 'context' dict. Found keys '{context.keys()}' in 'context'.\"\n    )\n\n    hr_mosaic_bands = context[\"hr_mosaic_bands\"]\n    lr_mosaic_bands = context[\"lr_mosaic_bands\"]\n    interpolated_band_suffix = context[\"lr_interpolated_band_name_suffix\"]\n    lr_interpolated_bands = [f\"{b}{interpolated_band_suffix}\" for b in lr_mosaic_bands]\n    target_bands = context.get(\"target_bands\")\n    if target_bands is None or len(target_bands) != len(hr_mosaic_bands):\n        target_bands = hr_mosaic_bands\n    output_ndvi = context.get(\"output_ndvi\", False)\n\n    fused = fuse(\n        cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands\n    )\n    if output_ndvi:\n        # TODO band selection breaks if target_bands is set\n        nir = fused.sel(bands=\"B8A\")\n        red = fused.sel(bands=\"B04\")\n        ndvi = (nir - red) / (nir + red)\n        # TODO may break on older version of xarray\n        ndvi_formatted = ndvi.expand_dims({\"bands\": [\"ndvi\"]}, axis=fused.dims.index(\"bands\"))\n        return ndvi_formatted\n\n    return fused\n\n\ndef apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:\n    target_bands = context.get(\"target_bands\", context[\"hr_mosaic_bands\"])\n    output_ndvi = context.get(\"output_ndvi\", False)\n    if output_ndvi:\n        target_bands = [\"ndvi\"]\n    metadata = metadata.rename_labels(dimension=\"bands\", target=target_bands)\n    return metadata\n\n\ndef fuse(cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands):\n    fused_list = [\n        # Pixels where there is no data in either lr_m or lr_p are skipped, to avoid\n        # only adding or only subtracting from the S2 composite, which would result in unusually high or low\n        # (e.g. negative values).\n        xr.where(\n            (cube.sel(bands=lr_m) == 0)\n            | np.isnan(cube.sel(bands=lr_m))\n            | (cube.sel(bands=lr_p) == 0)\n            | np.isnan(cube.sel(bands=lr_p)),\n            cube.sel(bands=hr_m).squeeze(),\n            cube.sel(bands=[hr_m, lr_p]).sum(dim=\"bands\")\n            - cube.sel(bands=lr_m).squeeze(),\n        )\n        for (hr_m, lr_m, lr_p) in zip(\n            hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands\n        )\n    ]\n\n    fused = xr.concat(fused_list, dim=\"bands\")\n    fused = fused.assign_coords(bands=target_bands)\n    return fused\n"
                             },
                             "result": true
                         }
@@ -822,7 +850,7 @@
     },
     "id": "efast",
     "summary": "The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) is a method to create time-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution source (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).",
-    "description": "The Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST) [1] is a method to create\ntime-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution\nsource (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).\nIn comparison to other methods, EFAST aims to achieve results outperforming single-source interpolation\nwithout paying the computational cost of other methods leveraging spatial context.\nEFAST is focused on accurately capturing seasonal vegetation changes in homogeneous areas like range lands.\nDHI-GRAS has published a [Python implementation of the algorithm](https://github.com/DHI-GRAS/efast).\nIn the context of the ESA funded [APEx initiative](https://apex.esa.int/), the algorithm has been ported to OpenEO and is implemented in this process graph.\n\nEFAST interpolates Sentinel-2 acquisitions, using a time (temporal distance to target time) and\ndistance-to-cloud weighted compositing scheme. The Sentinel-3 time-series is incorporated to locally update\nthe interpolated Sentinel-2 imagery to accurately track vegetation changes between cloud-free Sentinel-2\nacquisitions. The method is described in detail in [1].\n\nEFAST produces high temporal frequency time-series matching the Sentinel-2 L2A bands which have\ncorresponding Sentinel-3 OLCI bands with matching centre frequencies. Because the application of EFAST is\nfocused on NDVI time-series, the UDP includes a parameter (output_ndvi) to directly compute the NDVI\nfor a given temporal and spatial extent.\n\nIt should be noted that OpenEO provides bands from the SENTINEL_L2A collection in integer format. EFAST\nconverts the data to floating point values for interpolation. Therefore, output bands of EFAST have a\ndifferent data type (floating point) than the corresponding SENTINEL_L2A bands.\n\n\n[1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 1833.\n",
+    "description": "# Introduction\n\nThe [Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST)]() [1] is a method to create\ntime-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution\nsource (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).\n\nIn comparison to other methods (e.g. STARFM), EFAST aims to achieve results outperforming single-source Sentinel-2\ntime-series interpolation by exploiting change information from Sentinel-3 with minimal computational cost,\nassuming homogeneous temporal dynamics.\nEFAST was originally designed to accurately capture seasonal vegetation changes in homogeneous areas like range lands\nwhich present long temporal gaps in Sentinel-2 time series during the rainy season.\nDHI has published a [Python implementation of the algorithm](https://github.com/DHI-GRAS/efast).\nIn the context of the ESA funded [APEx initiative](https://apex.esa.int/), the algorithm has been ported to OpenEO\nby [Brockmann Consult GmbH](https://www.brockmann-consult.de/) and is implemented in this process graph.\n\nEFAST interpolates Sentinel-2 acquisitions, using a time (temporal distance to target time) and\ndistance-to-cloud weighted compositing scheme. The Sentinel-3 time-series is incorporated to locally update\nthe interpolated Sentinel-2 imagery to accurately track vegetation changes between cloud-free Sentinel-2\nacquisitions. The method is described in detail in [1].\n\n[1]: Senty, Paul, Radoslaw Guzinski, Kenneth Grogan, et al. \u201cFast Fusion of Sentinel-2 and Sentinel-3 Time Series over Rangelands.\u201d Remote Sensing 16, no. 11 (2024): 1833. https://doi.org/10.3390/rs16111833\n\n# Usage remarks\n\n- EFAST produces high temporal frequency time-series matching the Sentinel-2 L2A bands which have\ncorresponding Sentinel-3 OLCI bands with matching centre frequencies. Because the application of EFAST is\nfocused on NDVI time-series, the UDP includes a parameter (`output_ndvi`) to directly compute the NDVI\nfor a given temporal and spatial extent.\n\n- It should be noted that OpenEO provides bands from the SENTINEL_L2A collection in integer format. EFAST\nconverts the data to floating point values for interpolation. Therefore, output bands of EFAST have a\ndifferent data type (floating point) than the corresponding SENTINEL_L2A bands.\n\n- Please refer to the [Jupyter notebook example](https://esa-apex.github.io/apex_jupyterlite/lab/index.html?fromURL=https%3A%2F%2Fraw.githubusercontent.com%2Fbcdev%2Fefast-process-graph%2Frefs%2Fheads%2Fmain%2Fnotebooks%2FEFAST_example_jupyterlite.ipynb)\n  for an interactive usage example and discussion of the parameters.\n  A minimal example can be found in the process-graph repository's\n  [readme](https://github.com/bcdev/efast-process-graph/).\n",
     "parameters": [
         {
             "name": "temporal_extent",
