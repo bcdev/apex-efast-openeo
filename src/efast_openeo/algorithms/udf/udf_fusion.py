@@ -36,8 +36,9 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
         cube, hr_mosaic_bands, lr_mosaic_bands, lr_interpolated_bands, target_bands
     )
     if output_ndvi:
-        nir = cube.sel(bands="B8A")
-        red = cube.sel(bands="B04")
+        # TODO band selection breaks if target_bands is set
+        nir = fused.sel(bands="B8A")
+        red = fused.sel(bands="B04")
         ndvi = (nir - red) / (nir + red)
         # TODO may break on older version of xarray
         ndvi_formatted = ndvi.expand_dims({"bands": ["ndvi"]}, axis=fused.dims.index("bands"))
