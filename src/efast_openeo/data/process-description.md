@@ -1,6 +1,6 @@
 # Introduction
 
-The [Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST)]() [1] is a method to create
+The [Efficient Fusion Algorithm Across Spatio-Temporal Scales (EFAST)](https://doi.org/10.3390/rs16111833) [1] is a method to create
 time-series with a fine resolution in space and time from a fine spatial but coarse temporal resolution
 source (Sentinel-2) and a coarse temporal but fine spatial resolution source (Sentinel-3).
 
