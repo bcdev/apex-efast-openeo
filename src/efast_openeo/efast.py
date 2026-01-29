@@ -159,6 +159,10 @@ def efast_openeo(
         flag_bitmask=0xff,
     )
 
+    if isinstance(s3_data_bands, list):
+        s3_data_bands_to_filter = [b for b in s3_data_bands if b != constants.S3_FLAG_BAND]
+    else:
+        s3_data_bands_to_filter = processes.array_filter(s3_data_bands, lambda b: b != constants.S3_FLAG_BAND)
     s3_bands = load_and_scale(
         connection=connection,
         use_binning=True,
@@ -166,8 +170,8 @@ def efast_openeo(
         collection_id=constants.S3_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
-        bands=[*s3_data_bands, constants.S3_FLAG_BAND],
-    ).filter_bands(s3_data_bands)
+        bands=s3_data_bands,
+    ).filter_bands(s3_data_bands_to_filter)
     s2_flags = connection.load_collection(
         constants.S2_COLLECTION,
         spatial_extent=bbox,
@@ -201,7 +205,7 @@ def efast_openeo(
 
     logger.info(f"Setting {s3_dtc_patch_length_px=} and {s3_dtc_overlap_length_px=}")
 
-    s3_cloud_mask = compute_cloud_mask_s3(s3_flags)
+    s3_cloud_mask = s3_bands.band(0).apply(lambda x: processes.is_nodata(x))
     s3_cloud_mask = save_intermediate(
         s3_cloud_mask,
         "s3_cloud_mask",
@@ -257,7 +261,7 @@ def efast_openeo(
         interval_days=interval_days,
         sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV,
     )
-    s3_composite_data_bands = s3_composite.filter_bands(s3_data_bands)
+    s3_composite_data_bands = s3_composite.filter_bands(s3_data_bands_to_filter)
     s3_composite_data_bands = save_intermediate(
         s3_composite_data_bands,
         "s3_composite_data_bands",
