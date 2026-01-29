@@ -18,7 +18,9 @@ def persistent_output_dir(persistent_output_dir_base) -> Path:
 
 @pytest.fixture
 def openeo_job_image_name():
-    return "python311-dev"
+    # return "python311-staging"
+    # return "python311-dev"
+    return None
 
 @pytest.mark.openeo
 @pytest.mark.manual
