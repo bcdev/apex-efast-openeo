@@ -78,8 +78,9 @@ def test_date_range_s3_composites(
 
     cube = compute_weighted_composite(
         s3_bands_and_distance_score,
-        temporal_extent_target,
-        interval_days,
+        temporal_extent=time_frame,
+        temporal_extent_target=temporal_extent_target,
+        interval_days=interval_days,
         sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV,
     )
 
@@ -113,8 +114,9 @@ def test_date_range_interpolation(
     )
     s3_target_interp = interpolate_time_series_to_target_extent(
         s3_bands,
-        temporal_extent_target,
-        interval_days,
+        temporal_extent=time_frame,
+        interval_days=interval_days,
+        temporal_extent_target=temporal_extent_target,
     )
 
     time_labels = s3_target_interp.dimension_labels("t").execute()
