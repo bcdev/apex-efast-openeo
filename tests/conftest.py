@@ -32,8 +32,7 @@ def file_extension():
 
 @pytest.fixture
 def download_style():
-    return "download"
-    # return "execute_batch"
+    return "execute_batch"
 
 
 @pytest.fixture
@@ -67,6 +66,16 @@ def time_frame():
     # return ["2022-09-22", "2022-09-26"] # Interesting cloud/no cloud pattern in S3
     # return ["2022-09-26", "2022-09-27"] # single day with cloudy s2 observation
     return ["2022-09-07", "2022-09-27"]
+
+
+@pytest.fixture
+def interval_days():
+    return 3
+
+
+@pytest.fixture
+def time_frame_target(time_frame):
+    return time_frame
 
 
 @pytest.fixture

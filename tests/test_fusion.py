@@ -30,14 +30,6 @@ def persistent_output_dir(persistent_output_dir_base) -> Path:
 def sigma_doy():
     return 20
 
-@pytest.fixture
-def interval_days():
-    return 3
-
-@pytest.fixture
-def time_frame_target(time_frame):
-    return time_frame
-
 
 @pytest.fixture
 def s3_at_target_times(time_frame, time_frame_target, interval_days, s3_cube, s2_band_cube, s2_bands, s3_bands):
