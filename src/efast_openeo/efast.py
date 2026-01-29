@@ -151,14 +151,23 @@ def efast_openeo(
         temporal_extent=temporal_extent,
         bands=[constants.S3_FLAG_BAND],
     ).band(constants.S3_FLAG_BAND)
+
+    # TODO expose as CLI parameters
+    binning_params = dict(
+        super_sampling=2,
+        flag_band=constants.S3_FLAG_BAND,
+        flag_bitmask=0xff,
+    )
+
     s3_bands = load_and_scale(
         connection=connection,
         use_binning=True,
+        binning_params=binning_params,
         collection_id=constants.S3_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
-        bands=s3_data_bands,
-    )
+        bands=[*s3_data_bands, constants.S3_FLAG_BAND],
+    ).filter_bands(s3_data_bands)
     s2_flags = connection.load_collection(
         constants.S2_COLLECTION,
         spatial_extent=bbox,
