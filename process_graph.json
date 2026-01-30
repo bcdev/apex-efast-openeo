@@ -380,7 +380,7 @@
             "arguments": {
                 "condition": {
                     "process_graph": {
-                        "neq1": {
+                        "neq2": {
                             "process_id": "neq",
                             "arguments": {
                                 "x": {
@@ -394,15 +394,6 @@
                 },
                 "data": {
                     "from_node": "apply5"
-                },
-                "dimension": "bands"
-            }
-        },
-        "dimensionlabels2": {
-            "process_id": "dimension_labels",
-            "arguments": {
-                "data": {
-                    "from_node": "filterlabels1"
                 },
                 "dimension": "bands"
             }
@@ -617,15 +608,27 @@
                 }
             }
         },
-        "filterbands1": {
-            "process_id": "filter_bands",
+        "filterlabels2": {
+            "process_id": "filter_labels",
             "arguments": {
-                "bands": {
-                    "from_node": "dimensionlabels2"
+                "condition": {
+                    "process_graph": {
+                        "neq1": {
+                            "process_id": "neq",
+                            "arguments": {
+                                "x": {
+                                    "from_parameter": "value"
+                                },
+                                "y": "distance_score"
+                            },
+                            "result": true
+                        }
+                    }
                 },
                 "data": {
                     "from_node": "applydimension1"
-                }
+                },
+                "dimension": "bands"
             }
         },
         "applykernel1": {
@@ -633,7 +636,7 @@
             "arguments": {
                 "border": 0,
                 "data": {
-                    "from_node": "filterbands1"
+                    "from_node": "filterlabels2"
                 },
                 "factor": 1.0,
                 "kernel": [
