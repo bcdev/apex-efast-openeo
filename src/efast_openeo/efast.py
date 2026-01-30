@@ -262,7 +262,11 @@ def efast_openeo(
         interval_days=interval_days,
         sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV,
     )
-    s3_composite_data_bands = s3_composite.filter_bands(s3_bands.dimension_labels("bands"))
+    #s3_composite_data_bands = s3_composite.filter_bands(s3_bands.dimension_labels("bands"))
+    s3_composite_data_bands = s3_composite.filter_labels(
+        dimension="bands",
+        condition= lambda b: b != "distance_score",
+    )
     s3_composite_data_bands = save_intermediate(
         s3_composite_data_bands,
         "s3_composite_data_bands",
