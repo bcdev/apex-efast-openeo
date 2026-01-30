@@ -5,6 +5,7 @@ import openeo
 from openeo.api.process import Parameter
 
 from efast_openeo.efast import efast_openeo
+from efast_openeo import constants
 
 
 def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
@@ -78,14 +79,17 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
     #    default=5000,
     # )
 
-    # temporal_score_stddev = Parameter.number(
-    #    name="temporal_score_stddev",
-    #    description=(
-    #        "Standard deviation (in days) of the gaussian window used for temporal composites. "
-    #        "A larger number means that observations further away from the target date receive a stronger weight."
-    #    ),
-    #    default=10,
-    # )
+    temporal_score_stddev = Parameter.number(
+       name="temporal_score_stddev",
+       description=(
+           "Standard deviation (in days) of the gaussian window used to temporally weigh observations in the "
+           "fusion procedure. This is the smoothing parameter 's' described in Section 2.5 of "
+           "[the paper](https://doi.org/10.3390/rs16111833)."
+           "A larger number means that observations further away from the target date receive a "
+           "stronger weight and that adjacent time steps in the output are more similar."
+       ),
+       default=constants.S2_TEMPORAL_SCORE_STDDEV,
+    )
 
     s3_data_bands = Parameter.array(
         name="s3_data_bands",
@@ -133,7 +137,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         interval_days,
         spatial_extent,
         # max_distance_to_cloud_m, # parameter can't define overlap of apply_neighborhood
-        # temporal_score_stddev,
+        temporal_score_stddev,
         s2_data_bands,
         s3_data_bands,
         output_ndvi,
@@ -171,6 +175,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         file_format=file_format,
         cloud_tolerance_percentage=cloud_tolerance_percentage,
         output_ndvi=output_ndvi,
+        temporal_score_stddev=temporal_score_stddev,
     )
 
     return params, process_graph

@@ -72,6 +72,15 @@ def parse_bands(ctx, param, value):
     ),
 )
 @click.option(
+    "--temporal-score-stddev",
+    type=float,
+    required=False,
+    default=constants.S2_TEMPORAL_SCORE_STDDEV,
+    help=(
+        "Standard deviation (in days) of the gaussian window used to temporally weigh observations in the fusion procedure"
+    ),
+)
+@click.option(
     "--bbox",
     callback=parse_bbox,
     required=True,
@@ -145,6 +154,7 @@ def main(
     file_format,
     cloud_tolerance_percentage,
     output_ndvi,
+    temporal_score_stddev,
 ):
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(exist_ok=True)
@@ -190,6 +200,7 @@ def main(
         file_format=file_format,
         cloud_tolerance_percentage=cloud_tolerance_percentage,
         output_ndvi=output_ndvi,
+        temporal_score_stddev=temporal_score_stddev,
     )
     # inputs
 

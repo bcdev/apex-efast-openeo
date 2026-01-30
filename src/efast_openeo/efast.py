@@ -89,6 +89,7 @@ def efast_openeo(
     cloud_tolerance_percentage: float,
     temporal_extent_target: List[str] | None,
     interval_days: int,
+    temporal_score_stddev: float | Parameter,
     output_ndvi: bool,
 ) -> openeo.DataCube:
     """
@@ -429,7 +430,7 @@ def efast_openeo(
         temporal_extent=temporal_extent,
         temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
-        sigma_doy=constants.S2_TEMPORAL_SCORE_STDDEV,
+        sigma_doy=temporal_score_stddev,
     )
     s2_s3_aggregate = save_intermediate(
         s2_s3_aggregate,

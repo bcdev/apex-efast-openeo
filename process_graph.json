@@ -731,7 +731,9 @@
                     "interval_days": {
                         "from_parameter": "interval_days"
                     },
-                    "sigma_doy": 20
+                    "sigma_doy": {
+                        "from_parameter": "temporal_score_stddev"
+                    }
                 },
                 "data": {
                     "from_node": "mergecubes3"
@@ -904,6 +906,15 @@
                 "type": "object",
                 "subtype": "geojson"
             }
+        },
+        {
+            "name": "temporal_score_stddev",
+            "description": "Standard deviation (in days) of the gaussian window used to temporally weigh observations in the fusion procedure. This is the smoothing parameter 's' described in Section 2.5 of [the paper](https://doi.org/10.3390/rs16111833).A larger number means that observations further away from the target date receive a stronger weight and that adjacent time steps in the output are more similar.",
+            "schema": {
+                "type": "number"
+            },
+            "default": 20,
+            "optional": true
         },
         {
             "name": "s2_data_bands",
