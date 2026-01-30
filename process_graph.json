@@ -323,28 +323,6 @@
                 "dimension": "t"
             }
         },
-        "arrayfilter1": {
-            "process_id": "array_filter",
-            "arguments": {
-                "condition": {
-                    "process_graph": {
-                        "neq1": {
-                            "process_id": "neq",
-                            "arguments": {
-                                "x": {
-                                    "from_parameter": "x"
-                                },
-                                "y": "CLOUD_flags"
-                            },
-                            "result": true
-                        }
-                    }
-                },
-                "data": {
-                    "from_parameter": "s3_data_bands"
-                }
-            }
-        },
         "loadcollection3": {
             "process_id": "load_collection",
             "arguments": {
@@ -397,22 +375,43 @@
                 }
             }
         },
-        "filterbands1": {
-            "process_id": "filter_bands",
+        "filterlabels1": {
+            "process_id": "filter_labels",
             "arguments": {
-                "bands": {
-                    "from_node": "arrayfilter1"
+                "condition": {
+                    "process_graph": {
+                        "neq1": {
+                            "process_id": "neq",
+                            "arguments": {
+                                "x": {
+                                    "from_parameter": "value"
+                                },
+                                "y": "CLOUD_flags"
+                            },
+                            "result": true
+                        }
+                    }
                 },
                 "data": {
                     "from_node": "apply5"
-                }
+                },
+                "dimension": "bands"
+            }
+        },
+        "dimensionlabels2": {
+            "process_id": "dimension_labels",
+            "arguments": {
+                "data": {
+                    "from_node": "filterlabels1"
+                },
+                "dimension": "bands"
             }
         },
         "reducedimension2": {
             "process_id": "reduce_dimension",
             "arguments": {
                 "data": {
-                    "from_node": "filterbands1"
+                    "from_node": "filterlabels1"
                 },
                 "dimension": "bands",
                 "reducer": {
@@ -572,7 +571,7 @@
             "process_id": "merge_cubes",
             "arguments": {
                 "cube1": {
-                    "from_node": "filterbands1"
+                    "from_node": "filterlabels1"
                 },
                 "cube2": {
                     "from_node": "adddimension2"
@@ -618,11 +617,11 @@
                 }
             }
         },
-        "filterbands2": {
+        "filterbands1": {
             "process_id": "filter_bands",
             "arguments": {
                 "bands": {
-                    "from_node": "arrayfilter1"
+                    "from_node": "dimensionlabels2"
                 },
                 "data": {
                     "from_node": "applydimension1"
@@ -634,7 +633,7 @@
             "arguments": {
                 "border": 0,
                 "data": {
-                    "from_node": "filterbands2"
+                    "from_node": "filterbands1"
                 },
                 "factor": 1.0,
                 "kernel": [
