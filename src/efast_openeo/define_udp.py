@@ -91,7 +91,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
        default=constants.S2_TEMPORAL_SCORE_STDDEV,
     )
 
-    s3_data_bands = Parameter(
+    s3_data_bands = Parameter.array(
         name="s3_data_bands",
         description=(
             "Sentinel-3 SYN L2 SYN bands (names follow the SENTINEL3_SYN_L2_SYN collection) used in the fusion "
@@ -101,14 +101,8 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
             "If the NDVI should be computed (parameter output_ndvi is set to True), s3_data_bands must be set to "
             "[Syn_Oa08_reflectance, Syn_Oa17_reflectance, CLOUD_flags]."
         ),
-        schema={
-            "type": "array",
-            "items": {
+        item_schema={
                 "type": "string"
-            },
-            "contains": {
-                "const": "CLOUD_flags"
-            }
         },
         default=[
             "Syn_Oa04_reflectance",
