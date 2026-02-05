@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 EPS = 1e-5
 
 
-def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
+def apply_datacube_integrated(cube: xr.DataArray, context: dict) -> xr.DataArray:
     """
     Computes a composite time series. The input time series is converted to the time series passed
     as ``"t_target"`` in ``context``, by computing a weighted sum of input images for each time step in
@@ -141,7 +141,8 @@ def compute_t_target(temporal_extent, interval_days) -> pd.DatetimeIndex:
     return t_target
 
 
-def apply_datacube_new(cube: xr.DataArray, context: dict) -> xr.DataArray:
+#def apply_datacube_new(cube: xr.DataArray, context: dict) -> xr.DataArray:
+def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     band_names = cube.get_index("bands")
     assert "bands" in cube.dims, (
         f"cube must have a 'bands' dimension, found '{cube.dims}'"
@@ -153,10 +154,16 @@ def apply_datacube_new(cube: xr.DataArray, context: dict) -> xr.DataArray:
         f"The target time dimension 't_target' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
     )
 
-    t_target = pd.DatetimeIndex(
-        [datetime.fromisoformat(t) for t in context["t_target"]]
+    band_names = cube.get_index("bands")
+    assert "bands" in cube.dims, (
+        f"cube must have a 'bands' dimension, found '{cube.dims}'"
     )
-    sigma_doy = context.get("sigma_doy", 5)
+    assert "distance_score" in band_names, (
+        f"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'"
+    )
+
+    sigma_doy = context["sigma_doy"]
+    t_target = get_t_target_from_context(context)
     temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)
     distance_score = cube.sel(bands="distance_score")
     data_bands = cube.sel(bands=[b for b in band_names if b != "distance_score"])
