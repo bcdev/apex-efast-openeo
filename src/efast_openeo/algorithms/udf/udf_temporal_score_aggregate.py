@@ -150,17 +150,6 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     assert "distance_score" in band_names, (
         f"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'"
     )
-    assert "t_target" in context, (
-        f"The target time dimension 't_target' must be provided in the 'context' dict. Found keys '{context.keys()}' in 'context'."
-    )
-
-    band_names = cube.get_index("bands")
-    assert "bands" in cube.dims, (
-        f"cube must have a 'bands' dimension, found '{cube.dims}'"
-    )
-    assert "distance_score" in band_names, (
-        f"Input cube must have a band 'distance_score' in addition to the input bands. Found bands '{band_names}'"
-    )
 
     sigma_doy = context["sigma_doy"]
     t_target = get_t_target_from_context(context)
