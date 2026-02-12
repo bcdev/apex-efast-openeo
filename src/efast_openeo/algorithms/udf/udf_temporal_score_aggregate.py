@@ -192,7 +192,7 @@ def _compute_combined_score_ng(distance_score, temporal_score, bands):
 
         weighted_bands = normalized_score * windowed_bands
         composite = weighted_bands.sum(skipna=True, dim="t")
-        composite = xr.where(normalized_score.sum(dim="t") == 0, np.nan, composite)
+        composite = xr.where(normalized_score.sum(dim="t") == 0 | (composite <= 0), np.nan, composite)
         composites[pd.to_datetime(middle_date.item()).strftime("%Y-%m-%d")] = composite
     composite_da = xr.concat(
         [composites[t_target] for t_target in composites],
