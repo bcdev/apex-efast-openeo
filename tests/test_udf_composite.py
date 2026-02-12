@@ -55,9 +55,11 @@ def test_combined_score_shape():
 def test_combined_score_variants_produce_equal_results():
     t_start = "2022-09-01"
     t_end = "2022-09-04"
+    sigma_doy = 5
+    interval_days = 1
     t = xr.date_range(t_start, t_end, freq="2D")
-    t_target = xr.date_range(t_start, t_end, freq="1D")
-    temporal_score = compute_temporal_score(t, t_target, 5)
+    t_target = xr.date_range(t_start, t_end, freq=f"{interval_days}D", inclusive="left")
+    temporal_score = compute_temporal_score(t, t_target, sigma_doy)
 
     days, y_len, x_len = len(t), 4, 5
     pixel_size_m = 20
@@ -95,7 +97,21 @@ def test_combined_score_variants_produce_equal_results():
 
     dims = ("t", "bands", "y", "x")
     composite = apply_datacube(
-        cube, {"t_target": t_target.strftime("%Y-%m-%d").to_list()}
+        cube, context={
+            "temporal_extent": (t_start, t_end),
+            "temporal_extent_target": (t_start, t_end),
+            "interval_days": interval_days,
+            "sigma_doy": sigma_doy,
+        }
+    )
+    composite3 = apply_datacube(
+        cube, context={
+            "temporal_extent": (t_start, t_end),
+            "temporal_extent_target": (t_start, t_end),
+            "interval_days": interval_days,
+            "sigma_doy": sigma_doy,
+            "use_stepwise_aggregation": True,
+        }
     )
     composite = composite.transpose(*dims)
     composite2 = _compute_combined_score_no_intermediates(
@@ -104,7 +120,9 @@ def test_combined_score_variants_produce_equal_results():
     composite2 = composite2.transpose(*dims)
 
     assert composite.shape == composite2.shape
-    assert np.isclose(composite.values, composite2.values).all()
+    assert composite.shape == composite3.shape
+    assert np.allclose(composite.values, composite2.values, equal_nan=True)
+    assert np.allclose(composite.values, composite3.values, equal_nan=True)
 
 
 def test_composite_masking():

@@ -91,6 +91,7 @@ def efast_openeo(
     interval_days: int,
     temporal_score_stddev: float | Parameter,
     output_ndvi: bool,
+    use_stepwise_aggregation: bool,
 ) -> openeo.DataCube:
     """
     Main logic for the EFAST [1] Sentinel-2 / Sentinel-3 Fusion implemented as an OpenEO process graph.
@@ -137,6 +138,8 @@ def efast_openeo(
              ``temporal_extent``. Should be entirely contained in ``temporal_extent``.
         :param interval_days: Interval at which to generate fused composites. This parameter also determines the
             interval of Sentinel-3 composites used in the computation.
+        :param use_stepwise_aggregation: if True, use alternative implementation of aggregation UDF to reduce memory
+            consumption
 
         :returns: Datacube with time series defined by the borders [incl, excl) ``termporal_extent_composites`` and step
          ``interval_days``, ``fused_band_names`` bands on S2 resolution.
@@ -261,6 +264,7 @@ def efast_openeo(
         temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
         sigma_doy=constants.S3_TEMPORAL_SCORE_STDDEV,
+        use_stepwise_aggregation=use_stepwise_aggregation,
     )
     #s3_composite_data_bands = s3_composite.filter_bands(s3_bands.dimension_labels("bands"))
     s3_composite_data_bands = s3_composite.filter_labels(
@@ -435,6 +439,7 @@ def efast_openeo(
         temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
         sigma_doy=temporal_score_stddev,
+        use_stepwise_aggregation=use_stepwise_aggregation,
     )
     s2_s3_aggregate = save_intermediate(
         s2_s3_aggregate,

@@ -135,6 +135,14 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         default=0.05,
     )
 
+    use_stepwise_aggregation = Parameter.boolean(
+        name="use_stepwise_aggregation",
+        description=(
+            "If set, use alternative stepwise (per target time stamp) UDF composite implementation to reduce memory "
+            "consumption."),
+        default=False,
+    )
+
     params = [
         temporal_extent,
         temporal_extent_target,
@@ -145,6 +153,7 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         s2_data_bands,
         s3_data_bands,
         output_ndvi,
+        use_stepwise_aggregation,
         # cloud_tolerance_percentage, Unexpected error in backend when using gte process
     ]
 
@@ -180,11 +189,13 @@ def create_efast_udp(connection) -> Tuple[List[Parameter], openeo.DataCube]:
         cloud_tolerance_percentage=cloud_tolerance_percentage,
         output_ndvi=output_ndvi,
         temporal_score_stddev=temporal_score_stddev,
+        use_stepwise_aggregation=use_stepwise_aggregation,
     )
 
     return params, process_graph
 
 
+# FIXME parameters are not up-to-date
 if __name__ == "__main__":
     # TODO make a function that takes command line arguments
     connection = openeo.connect(

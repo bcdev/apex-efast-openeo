@@ -15,6 +15,7 @@ def compute_weighted_composite(
     temporal_extent_target: List[str] | Parameter | None,
     interval_days: int,
     sigma_doy: float,
+    use_stepwise_aggregation: bool = False,
 ):
     """
     Computes a score weighted by the distance to the target date from the distance to cloud score.
@@ -22,6 +23,9 @@ def compute_weighted_composite(
     of ``temporal_extent_target`` (inclusive) up to the upper limit of ``temporal_extent_target`` (exclusive).
     If ``temporal_extent_target`` is not set, ``temporal_extent_input`` is used. One of these two parameters
     must be set.
+
+    :param use_stepwise_aggregation: If True use alternative implementation of the composite UDF that computes
+        each target time step separately. This should reduce memory requirements.
     """
     udf = openeo.UDF.from_file(
         UDF_TEMPORAL_SCORE, context={"from_parameter": "context"}, runtime="Python"
@@ -31,6 +35,7 @@ def compute_weighted_composite(
         temporal_extent_target=temporal_extent_target,
         interval_days=interval_days,
         sigma_doy=sigma_doy,
+        use_stepwise_aggregation=use_stepwise_aggregation,
     )
     weighted = cube_with_distance_score.apply_dimension(
         process=udf, dimension="t", context=context

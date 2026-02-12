@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 EPS = 1e-5
 
 
-def apply_datacube_integrated(cube: xr.DataArray, context: dict) -> xr.DataArray:
+def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     """
     Computes a composite time series. The input time series is converted to the time series passed
     as ``"t_target"`` in ``context``, by computing a weighted sum of input images for each time step in
@@ -18,6 +18,8 @@ def apply_datacube_integrated(cube: xr.DataArray, context: dict) -> xr.DataArray
 
     Expects ``cube`` to be an array of dimensions (t, bands, y, x)
     """
+    if context.get("use_stepwise_aggregation", False):
+        return apply_datacube_stepwise(cube, context)
 
     band_names = cube.get_index("bands")
     assert "bands" in cube.dims, (
@@ -141,8 +143,7 @@ def compute_t_target(temporal_extent, interval_days) -> pd.DatetimeIndex:
     return t_target
 
 
-#def apply_datacube_new(cube: xr.DataArray, context: dict) -> xr.DataArray:
-def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
+def apply_datacube_stepwise(cube: xr.DataArray, context: dict) -> xr.DataArray:
     band_names = cube.get_index("bands")
     assert "bands" in cube.dims, (
         f"cube must have a 'bands' dimension, found '{cube.dims}'"
@@ -165,6 +166,7 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
 
 
 def _compute_combined_score_ng(distance_score, temporal_score, bands):
+    # TODO make mosaic_days a parameter
     mosaic_days = 100
     composites = {}
 
@@ -185,7 +187,7 @@ def _compute_combined_score_ng(distance_score, temporal_score, bands):
         score = windowed_distance_score * windowed_temporal_score
         score_nan_masked = xr.where(np.isnan(windowed_bands.isel(bands=0)), 0, score)
         # score_nan_masked = score
-        normalizing_coefficient = score_nan_masked.sum(dim="t") + 1e-5
+        normalizing_coefficient = score_nan_masked.sum(dim="t")# + 1e-5
         normalized_score = score_nan_masked / normalizing_coefficient
 
         weighted_bands = normalized_score * windowed_bands
@@ -194,7 +196,7 @@ def _compute_combined_score_ng(distance_score, temporal_score, bands):
         composites[pd.to_datetime(middle_date.item()).strftime("%Y-%m-%d")] = composite
     composite_da = xr.concat(
         [composites[t_target] for t_target in composites],
-        dim=xr.IndexVariable("t_target", list(composites.keys())),
+        dim=xr.IndexVariable("t_target", temporal_score.t_target),
     )
     return composite_da
 

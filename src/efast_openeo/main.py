@@ -136,6 +136,10 @@ def parse_bands(ctx, param, value):
     is_flag=True,
     help="If set, produce the normalized difference vegetation index (NDVI) as output instead of the fused bands",
 )
+@click.option(
+    "--use-stepwise-aggregation", is_flag=True,
+    help="If set, use alternative stepwise (per target time stamp) UDF composite implementation"
+)
 def main(
     max_distance_to_cloud_m,
     t_start,
@@ -155,6 +159,7 @@ def main(
     cloud_tolerance_percentage,
     output_ndvi,
     temporal_score_stddev,
+    use_stepwise_aggregation,
 ):
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(exist_ok=True)
@@ -201,6 +206,7 @@ def main(
         cloud_tolerance_percentage=cloud_tolerance_percentage,
         output_ndvi=output_ndvi,
         temporal_score_stddev=temporal_score_stddev,
+        use_stepwise_aggregation=use_stepwise_aggregation,
     )
     # inputs
 
