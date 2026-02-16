@@ -37,7 +37,10 @@ def compute_weighted_composite(
         sigma_doy=sigma_doy,
         use_stepwise_aggregation=use_stepwise_aggregation,
     )
-    weighted = cube_with_distance_score.apply_dimension(
-        process=udf, dimension="t", context=context
+    weighted = cube_with_distance_score.apply_neighborhood(
+        process=udf, size=[
+            {"dimension": "x", "value": 64, "unit": "px"},
+            {"dimension": "y", "value": 64, "unit": "px"},
+        ], context=context,
     )
     return weighted
