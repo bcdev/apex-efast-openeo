@@ -33,6 +33,9 @@ def apply_datacube(cube: xr.DataArray, context) -> xr.DataArray:
     if getattr(t_target, "tz", None) is not None:
         t_target = t_target.tz_localize(None)
 
+    band_names = cube.get_index("bands")
+    cube = cube.sel(bands=[b for b in band_names if (b != "distance_score" and b != "CLOUD_flags")])
+
     interpolated = cube.interp(t=t_target)
     interpolated = interpolated.assign_coords(
         bands=[f"{b}{band_suffix}" for b in interpolated.coords["bands"].values]
@@ -46,6 +49,13 @@ def apply_metadata(metadata: CubeMetadata, context) -> CubeMetadata:
     band_suffix = get_target_band_name_suffix_from_context(context)
 
     metadata = metadata.rename_labels(dimension="t", target=t_target)
+    metadata = metadata.filter_bands(
+        [
+            band.name
+            for band in metadata.band_dimension.bands
+            if band.name != "CLOUD_flags"
+        ]
+    )
     metadata = metadata.rename_labels(dimension="bands", target=[f"{b}{band_suffix}" for b in metadata.band_names])
     return metadata
 

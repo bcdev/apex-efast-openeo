@@ -33,7 +33,7 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
     t_target = get_t_target_from_context(context)
     temporal_score = compute_temporal_score(cube.t, t_target, sigma_doy)
     distance_score = cube.sel(bands="distance_score")
-    data_bands = cube.sel(bands=[b for b in band_names if b != "distance_score"])
+    data_bands = cube.sel(bands=[b for b in band_names if (b != "distance_score" and b != "CLOUD_flags")])
 
     composite = _compute_combined_score_no_intermediates(
         distance_score, temporal_score, data_bands
@@ -53,7 +53,7 @@ def apply_metadata(metadata: CubeMetadata, context: dict) -> CubeMetadata:
         [
             band.name
             for band in metadata.band_dimension.bands
-            if band.name != "distance_score"
+            if (band.name != "distance_score" and band.name != "CLOUD_flags")
         ]
     )
     return metadata
