@@ -196,12 +196,12 @@
                 "overlap": [
                     {
                         "dimension": "x",
-                        "value": 500,
+                        "value": 33,
                         "unit": "px"
                     },
                     {
                         "dimension": "y",
-                        "value": 500,
+                        "value": 33,
                         "unit": "px"
                     }
                 ],
@@ -227,12 +227,12 @@
                     },
                     {
                         "dimension": "x",
-                        "value": 1000,
+                        "value": 660,
                         "unit": "px"
                     },
                     {
                         "dimension": "y",
-                        "value": 1000,
+                        "value": 660,
                         "unit": "px"
                     }
                 ]
@@ -451,12 +451,12 @@
                 "overlap": [
                     {
                         "dimension": "x",
-                        "value": 500,
+                        "value": 33,
                         "unit": "px"
                     },
                     {
                         "dimension": "y",
-                        "value": 500,
+                        "value": 33,
                         "unit": "px"
                     }
                 ],
@@ -482,12 +482,12 @@
                     },
                     {
                         "dimension": "x",
-                        "value": 1000,
+                        "value": 660,
                         "unit": "px"
                     },
                     {
                         "dimension": "y",
-                        "value": 1000,
+                        "value": 660,
                         "unit": "px"
                     }
                 ]

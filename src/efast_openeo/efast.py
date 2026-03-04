@@ -202,11 +202,12 @@ def efast_openeo(
 
     # s3 composites
     #overlap_factor = 10
-    overlap_factor = 30
+    overlap_factor = 2
+    patch_length_factor = 20
     s3_dtc_overlap_length_px = (
         int(max_distance_to_cloud_m * overlap_factor) // constants.S3_RESOLUTION_M
     )
-    s3_dtc_patch_length_px = s3_dtc_overlap_length_px * 2
+    s3_dtc_patch_length_px = s3_dtc_overlap_length_px * patch_length_factor
 
     logger.info(f"Setting {s3_dtc_patch_length_px=} and {s3_dtc_overlap_length_px=}")
 
