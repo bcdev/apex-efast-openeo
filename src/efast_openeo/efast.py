@@ -326,7 +326,7 @@ def efast_openeo(
         skip_all=skip_all_intermediates,
     )
     s2_cloud_mask_mean = s2_cloud_mask.resample_spatial(
-        resolution=300, method="average"
+        resolution=constants.S3_RESOLUTION_M, method="average"
     )
     s2_cloud_mask_mean = save_intermediate(
         s2_cloud_mask_mean,

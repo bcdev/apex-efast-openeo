@@ -23,6 +23,13 @@ def export(json_path: Path):
     params, process_graph = create_efast_udp(connection)
     process_description_resource = importlib.resources.files("efast_openeo.data").joinpath("process-description.md")
     process_description = process_description_resource.read_text(encoding="utf-8")
+
+    # 4G Python memory is necessary to run composite UDF successfully,
+    # 11G executor memory for merge_cubes
+    job_options_resouce = importlib.resources.files("efast_openeo.data").joinpath("default-job-options.json")
+    with job_options_resouce.open("r") as fp:
+        job_options = json.load(fp)
+
     pg_with_metadata = openeo.rest.udp.build_process_dict(
         process_graph,
         process_id="efast",
@@ -33,6 +40,7 @@ def export(json_path: Path):
         ),
         description=process_description,
         parameters=params,
+        default_job_options=job_options,
     )
 
     with open(json_path, "w") as fh:

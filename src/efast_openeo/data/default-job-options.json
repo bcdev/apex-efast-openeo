@@ -1,0 +1,4 @@
+{
+  "executor-memory": "11G",
+  "python-memory": "4G"
+}
