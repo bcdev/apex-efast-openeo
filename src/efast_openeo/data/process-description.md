@@ -53,6 +53,7 @@ and more expensive jobs.
 
 When running EFAST from the Python client, you can set job options, when creating the job:
 ```Python
+import openeo
 connection = openeo.connect("https://openeo.dataspace.copernicus.eu").authenticate_oidc()
 cube = connection.datacube_from_process(
     "efast",
