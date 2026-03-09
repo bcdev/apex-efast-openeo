@@ -35,3 +35,40 @@ different data type (floating point) than the corresponding SENTINEL_L2A bands.
   for an interactive usage example and discussion of the parameters.
   A minimal example can be found in the process-graph repository's
   [readme](https://github.com/bcdev/efast-process-graph/).
+
+## Job Parameters for long time series and large areas of extent
+
+When applying EFAST to long time series and large areas, very large data volumes are processed.
+EFAST is used to generate time series of combined high spatial and high temporal resolution, which by nature
+results in large volumes of data.
+
+The EFAST process graph is configured by default to support one-year time series at 0.25° by 0.25° spatial tiles for the
+processing of 4 spectral bands. When time-series become longer, the `python-memory` job option may need to be increased.
+For larger areas, the `executor-memory` job option may need to be increased.
+By default, EFAST runs with 4 GB of Python memory and 11 GB of executor memory.
+If you are running only small tests, you may want to reduce these values to save credits.
+
+Be careful when setting job options, as setting the executor memory too high or too low may both result in slower
+and more expensive jobs.
+
+When running EFAST from the Python client, you can set job options, when creating the job:
+```Python
+connection = openeo.connect("https://openeo.dataspace.copernicus.eu").authenticate_oidc()
+cube = connection.datacube_from_process(
+    "efast",
+    # ...
+)
+job = cube.create_job(
+    out_format="netcdf",
+    title=f"EFAST with job options",
+    job_options={ # <----
+      "executor-memory": "14G",
+      "python-memory": "4G",
+      # ...
+    }
+)
+job.start_and_wait()
+```
+
+For more on setting job options, see the [CDSE documentation on OpenEO job configuration](https://documentation.dataspace.copernicus.eu/APIs/openEO/job_config.html)
+and the Python client's documentation on [create_job](https://open-eo.github.io/openeo-python-client/api.html#openeo.rest.datacube.DataCube.create_job).
