@@ -414,7 +414,8 @@ def efast_openeo(
     )
 
     # s2/3 aggregate
-    s2_bands_dtc_merge = s2_bands_masked.merge_cubes(s2_distance_score)
+    s2_distance_score_upsampled = s2_distance_score.resample_cube_spatial(s2_bands_masked, method="bilinear")
+    s2_bands_dtc_merge = s2_bands_masked.merge_cubes(s2_distance_score_upsampled)
     s2_bands_dtc_merge = save_intermediate(
         s2_bands_dtc_merge,
         "s2_bands_dtc_merge",
@@ -424,7 +425,8 @@ def efast_openeo(
         to_skip=skip_intermediates,
         skip_all=skip_all_intermediates,
     )
-    s2_s3_pre_aggregate_merge = s2_bands_dtc_merge.merge_cubes(s3_composite_s2_interp)
+    s3_composite_s2_interp_upsampled = s3_composite_s2_interp.resample_cube_spatial(s2_bands_dtc_merge, method="bilinear")
+    s2_s3_pre_aggregate_merge = s2_bands_dtc_merge.merge_cubes(s3_composite_s2_interp_upsampled)
     s2_s3_pre_aggregate_merge = save_intermediate(
         s2_s3_pre_aggregate_merge,
         "s2_s3_pre_aggregate_merge",
@@ -453,7 +455,8 @@ def efast_openeo(
         skip_all=skip_all_intermediates,
     )
 
-    fusion_input = s2_s3_aggregate.merge_cubes(s3_composite_target_interp)
+    s3_composite_target_interp_upsampled = s3_composite_target_interp.resample_cube_spatial(s2_s3_aggregate, method="bilinear")
+    fusion_input = s2_s3_aggregate.merge_cubes(s3_composite_target_interp_upsampled)
     fusion_input = save_intermediate(
         fusion_input,
         "fusion_input",

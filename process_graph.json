@@ -303,6 +303,18 @@
                 "type": "bands"
             }
         },
+        "resamplecubespatial1": {
+            "process_id": "resample_cube_spatial",
+            "arguments": {
+                "data": {
+                    "from_node": "adddimension1"
+                },
+                "method": "bilinear",
+                "target": {
+                    "from_node": "mask1"
+                }
+            }
+        },
         "mergecubes1": {
             "process_id": "merge_cubes",
             "arguments": {
@@ -310,7 +322,7 @@
                     "from_node": "mask1"
                 },
                 "cube2": {
-                    "from_node": "adddimension1"
+                    "from_node": "resamplecubespatial1"
                 }
             }
         },
@@ -723,6 +735,18 @@
                 }
             }
         },
+        "resamplecubespatial2": {
+            "process_id": "resample_cube_spatial",
+            "arguments": {
+                "data": {
+                    "from_node": "applydimension1"
+                },
+                "method": "bilinear",
+                "target": {
+                    "from_node": "mergecubes1"
+                }
+            }
+        },
         "mergecubes3": {
             "process_id": "merge_cubes",
             "arguments": {
@@ -730,7 +754,7 @@
                     "from_node": "mergecubes1"
                 },
                 "cube2": {
-                    "from_node": "applydimension1"
+                    "from_node": "resamplecubespatial2"
                 }
             }
         },
@@ -828,6 +852,18 @@
                 }
             }
         },
+        "resamplecubespatial3": {
+            "process_id": "resample_cube_spatial",
+            "arguments": {
+                "data": {
+                    "from_node": "applydimension2"
+                },
+                "method": "bilinear",
+                "target": {
+                    "from_node": "applyneighborhood4"
+                }
+            }
+        },
         "mergecubes4": {
             "process_id": "merge_cubes",
             "arguments": {
@@ -835,7 +871,7 @@
                     "from_node": "applyneighborhood4"
                 },
                 "cube2": {
-                    "from_node": "applydimension2"
+                    "from_node": "resamplecubespatial3"
                 }
             }
         },
