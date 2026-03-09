@@ -7,6 +7,22 @@
                     "from_parameter": "s2_data_bands"
                 },
                 "id": "SENTINEL2_L2A",
+                "properties": {
+                    "eo:cloud_cover": {
+                        "process_graph": {
+                            "lte1": {
+                                "process_id": "lte",
+                                "arguments": {
+                                    "x": {
+                                        "from_parameter": "value"
+                                    },
+                                    "y": 95
+                                },
+                                "result": true
+                            }
+                        }
+                    }
+                },
                 "spatial_extent": {
                     "from_parameter": "spatial_extent"
                 },
@@ -53,6 +69,22 @@
                     "SCL"
                 ],
                 "id": "SENTINEL2_L2A",
+                "properties": {
+                    "eo:cloud_cover": {
+                        "process_graph": {
+                            "lte2": {
+                                "process_id": "lte",
+                                "arguments": {
+                                    "x": {
+                                        "from_parameter": "value"
+                                    },
+                                    "y": 95
+                                },
+                                "result": true
+                            }
+                        }
+                    }
+                },
                 "spatial_extent": {
                     "from_parameter": "spatial_extent"
                 },
@@ -348,6 +380,22 @@
                     "flag_bitmask": 255
                 },
                 "id": "SENTINEL3_SYN_L2_SYN",
+                "properties": {
+                    "eo:cloud_cover": {
+                        "process_graph": {
+                            "lte3": {
+                                "process_id": "lte",
+                                "arguments": {
+                                    "x": {
+                                        "from_parameter": "value"
+                                    },
+                                    "y": 95
+                                },
+                                "result": true
+                            }
+                        }
+                    }
+                },
                 "spatial_extent": {
                     "from_parameter": "spatial_extent"
                 },

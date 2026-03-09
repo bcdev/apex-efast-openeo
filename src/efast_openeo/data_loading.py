@@ -1,6 +1,11 @@
 import openeo
 
-def load_and_scale(connection: openeo.Connection, use_binning: bool = False, binning_params: dict | None=None, **kwargs):
+def load_and_scale(
+    connection: openeo.Connection,
+    use_binning: bool = False,
+    binning_params: dict | None=None,
+    **kwargs
+    ):
     """
     Applies offset and scale factor to a cube right after load_collection.
     Offset and scale factor are assumed to be constant across bands.

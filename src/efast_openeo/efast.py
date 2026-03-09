@@ -149,12 +149,12 @@ def efast_openeo(
 
     # Separate ``load_collection`` calls must be used (not filter_bands) because of a backend bug
     # https://forum.dataspace.copernicus.eu/t/combination-of-apply-neighborhood-and-merge-cubes-leads-to-additional-labels-in-the-time-dimension/4189/3
-    s3_flags = connection.load_collection(
-        constants.S3_COLLECTION,
-        spatial_extent=bbox,
-        temporal_extent=temporal_extent,
-        bands=[constants.S3_FLAG_BAND],
-    ).band(constants.S3_FLAG_BAND)
+    #s3_flags = connection.load_collection(
+    #    constants.S3_COLLECTION,
+    #    spatial_extent=bbox,
+    #    temporal_extent=temporal_extent,
+    #    bands=[constants.S3_FLAG_BAND],
+    #).band(constants.S3_FLAG_BAND)
 
     # TODO expose as CLI parameters
     binning_params = dict(
@@ -171,6 +171,7 @@ def efast_openeo(
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
         bands=s3_data_bands,
+        max_cloud_cover=constants.MAX_CLOUD_COVER_PERCENTAGE,
     )
     s3_bands = s3_bands.filter_labels(
         dimension="bands",
@@ -181,12 +182,14 @@ def efast_openeo(
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
         bands=[constants.S2_FLAG_BAND],
+        max_cloud_cover=constants.MAX_CLOUD_COVER_PERCENTAGE,
     ).band(constants.S2_FLAG_BAND)
     s2_bands = load_and_scale(
         connection=connection,
         collection_id=constants.S2_COLLECTION,
         spatial_extent=bbox,
         temporal_extent=temporal_extent,
+        max_cloud_cover=constants.MAX_CLOUD_COVER_PERCENTAGE,
         bands=s2_data_bands,
     )
     # TODO collect intermediates in a dict and run save_intermediates at the end (also, avoid repeating the parameters)
