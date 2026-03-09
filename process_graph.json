@@ -643,9 +643,7 @@
                         "from_parameter": "interval_days"
                     },
                     "sigma_doy": 10,
-                    "use_stepwise_aggregation": {
-                        "from_parameter": "use_stepwise_aggregation"
-                    }
+                    "use_stepwise_aggregation": false
                 },
                 "data": {
                     "from_node": "mergecubes2"
@@ -822,9 +820,7 @@
                     "sigma_doy": {
                         "from_parameter": "temporal_score_stddev"
                     },
-                    "use_stepwise_aggregation": {
-                        "from_parameter": "use_stepwise_aggregation"
-                    }
+                    "use_stepwise_aggregation": false
                 },
                 "data": {
                     "from_node": "mergecubes3"
@@ -1072,15 +1068,6 @@
         {
             "name": "output_ndvi",
             "description": "If set to True, the output includes a single NDVI band. Otherwise, the output includes the bands of the Sentinel-2 input (defined by parameter s2_data_bands). If set to True, the bands B04 and B8A must be included in s2_data_bands, and the bands Syn_Oa08_reflectance and Syn_Oa17_reflectance must be included in s3_data_bands.",
-            "schema": {
-                "type": "boolean"
-            },
-            "default": false,
-            "optional": true
-        },
-        {
-            "name": "use_stepwise_aggregation",
-            "description": "If set, use alternative stepwise (per target time stamp) UDF composite implementation to reduce memory consumption.",
             "schema": {
                 "type": "boolean"
             },
