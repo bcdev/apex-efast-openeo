@@ -407,7 +407,7 @@ def efast_openeo(
     )
 
     s3_composite_s2_interp = interpolate_time_series_to_target_labels(
-        s3_composite_data_bands_smoothed, s2_bands.dimension_labels("t")
+        s3_composite_data_bands_smoothed, s2_bands_masked.dimension_labels("t")
     )
     s3_composite_s2_interp = save_intermediate(
         s3_composite_s2_interp,

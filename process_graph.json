@@ -362,7 +362,7 @@
             "process_id": "dimension_labels",
             "arguments": {
                 "data": {
-                    "from_node": "apply1"
+                    "from_node": "mask1"
                 },
                 "dimension": "t"
             }
