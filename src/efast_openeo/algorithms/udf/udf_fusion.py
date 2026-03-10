@@ -25,6 +25,8 @@ def apply_datacube(cube: xr.DataArray, context: dict) -> xr.DataArray:
 
     hr_mosaic_bands = context["hr_mosaic_bands"]
     lr_mosaic_bands = context["lr_mosaic_bands"]
+    if "CLOUD_flags" in lr_mosaic_bands:
+        lr_mosaic_bands = list(set(lr_mosaic_bands) - {"CLOUD_flags"})
     interpolated_band_suffix = context["lr_interpolated_band_name_suffix"]
     lr_interpolated_bands = [f"{b}{interpolated_band_suffix}" for b in lr_mosaic_bands]
     target_bands = context.get("target_bands")
